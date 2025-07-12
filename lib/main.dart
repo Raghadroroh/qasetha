@@ -1,28 +1,62 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'utils/firebase_options.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'routes/router.dart';
+import 'utils/theme.dart';
+import 'utils/firebase_options.dart';
+import 'services/theme_service.dart';
+import 'utils/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(const QasethaApp());
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
+  final themeService = ThemeService();
+  await themeService.loadSettings();
+  
+  runApp(QasethaApp(themeService: themeService));
 }
 
 class QasethaApp extends StatelessWidget {
-  const QasethaApp({super.key});
+  final ThemeService themeService;
+  
+  const QasethaApp({super.key, required this.themeService});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      debugShowCheckedModeBanner: false,
-      title: 'Qasetha',
-      theme: ThemeData(
-        useMaterial3: true,
-        fontFamily: 'Cairo',
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
+    return ChangeNotifierProvider.value(
+      value: themeService,
+      child: Consumer<ThemeService>(
+        builder: (context, themeService, child) {
+          return MaterialApp.router(
+            debugShowCheckedModeBanner: false,
+            title: 'قسطها',
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeService.themeMode,
+            locale: Locale(themeService.languageCode),
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) {
+              return Directionality(
+                textDirection: themeService.languageCode == 'ar' 
+                    ? TextDirection.rtl 
+                    : TextDirection.ltr,
+                child: child!,
+              );
+            },
+            routerConfig: appRouter,
+          );
+        },
       ),
-      routerConfig: appRouter,
     );
   }
 }

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:logger/logger.dart';
-import '../../utils/password_validator.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../constants/app_strings.dart';
+import '../../utils/app_localizations.dart';
+import '../../services/firebase_auth_service.dart';
+import '../../services/firebase_service.dart';
+import '../../utils/validators.dart';
+import '../../widgets/auth_scaffold.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -13,186 +15,98 @@ class SignupScreen extends StatefulWidget {
   State<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen>
-    with TickerProviderStateMixin {
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final Logger _logger = Logger();
+class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMixin {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  final _authService = FirebaseAuthService();
+  final _firebaseService = FirebaseService();
+
+  bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  bool _isLoading = false;
-  bool _showPasswordRequirements = false;
-  bool _acceptTerms = false;
-  bool _isEmail = true;
-  Map<String, bool> _passwordRequirements = {};
-
-  late AnimationController _fadeController;
+  bool _isEmailMode = true;
+  
   late AnimationController _slideController;
-  late Animation<double> _fadeAnimation;
+  late AnimationController _fadeController;
+  late AnimationController _shimmerController;
   late Animation<Offset> _slideAnimation;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
     _slideController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 400),
       vsync: this,
     );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
     );
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0.0, 0.5), end: Offset.zero).animate(
-          CurvedAnimation(parent: _slideController, curve: Curves.elasticOut),
-        );
-
-    _fadeController.forward();
+    _shimmerController = AnimationController(
+      duration: const Duration(milliseconds: 3000),
+      vsync: this,
+    )..repeat();
+    
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.fastOutSlowIn,
+    ));
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeIn,
+    ));
+    
     _slideController.forward();
+    _fadeController.forward();
   }
 
   @override
   void dispose() {
-    _fadeController.dispose();
-    _slideController.dispose();
     _nameController.dispose();
     _emailController.dispose();
-    _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _slideController.dispose();
+    _fadeController.dispose();
+    _shimmerController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleSignup() async {
-    if (!_formKey.currentState!.validate() || !_acceptTerms) {
-      if (!_acceptTerms) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'يجب الموافقة على الشروط والأحكام',
-              style: GoogleFonts.tajawal(),
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return;
-    }
+  Future<void> _signup() async {
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
-      if (_isEmail) {
-        // Email signup
-        final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-        );
+      final result = await FirebaseAuthService.createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        name: _nameController.text.trim(),
+      );
 
-        // Update display name
-        await credential.user?.updateDisplayName(_nameController.text.trim());
-
-        // Store additional user data in Firestore
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(credential.user?.uid)
-            .set({
-          'name': _nameController.text.trim(),
-          'email': _emailController.text.trim(),
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-
-        if (!mounted) return;
-
-        _logger.i('User created with email: ${_emailController.text}');
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'تم إنشاء الحساب بنجاح',
-              style: GoogleFonts.tajawal(),
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        context.go('/home');
-      } else {
-        // Phone signup with OTP
-        final phoneNumber = '+962${_phoneController.text.trim()}';
-        
-        await FirebaseAuth.instance.verifyPhoneNumber(
-          phoneNumber: phoneNumber,
-          verificationCompleted: (PhoneAuthCredential credential) async {
-            try {
-              final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-              
-              // Update display name
-              await userCredential.user?.updateDisplayName(_nameController.text.trim());
-
-              // Store additional user data in Firestore
-              await FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(userCredential.user?.uid)
-                  .set({
-                'name': _nameController.text.trim(),
-                'phone': phoneNumber,
-                'createdAt': FieldValue.serverTimestamp(),
-              });
-
-              if (!mounted) return;
-
-              _logger.i('User created with phone: $phoneNumber');
-              context.go('/home');
-            } catch (e) {
-              _logger.e('Phone verification completed error: $e');
-            }
-          },
-          verificationFailed: (FirebaseAuthException e) {
-            if (!mounted) return;
-            throw e.message ?? 'فشل في إرسال رمز التحقق';
-          },
-          codeSent: (String verificationId, int? resendToken) {
-            if (!mounted) return;
-            
-            _logger.i('OTP sent to: $phoneNumber');
-            
-            context.go('/otp', extra: {
-              'verificationId': verificationId,
-              'from': 'signup',
-              'userData': {
-                'name': _nameController.text.trim(),
-                'phone': phoneNumber,
-              }
-            });
-          },
-          codeAutoRetrievalTimeout: (String verificationId) {
-            // Timeout
-          },
-        );
+      if (mounted) {
+        if (result.success) {
+          _showSnackBar('تم إنشاء الحساب بنجاح');
+          context.go('/verify-email');
+        } else {
+          _showSnackBar(result.message, isError: true);
+        }
       }
     } catch (e) {
-      _logger.e('Signup error: $e');
-      
-      if (!mounted) return;
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            e.toString(),
-            style: GoogleFonts.tajawal(),
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        _showSnackBar('خطأ: $e', isError: true);
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -200,616 +114,429 @@ class _SignupScreenState extends State<SignupScreen>
     }
   }
 
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.tajawal(color: Colors.white)),
+        backgroundColor: isError ? Theme.of(context).colorScheme.error : Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
+    return PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) {
+        if (!didPop) context.go('/login');
+      },
       child: Scaffold(
         body: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF0A0E21),
-                Color(0xFF1A1B3A),
-                Color(0xFF2D1B69),
-                Color(0xFF0A192F),
-              ],
-              stops: [0.0, 0.3, 0.7, 1.0],
-            ),
-          ),
-          child: SafeArea(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24.0,
-                  vertical: 20.0,
-                ),
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildBackButton(),
-                        const SizedBox(height: 20),
-                        _buildHeader(),
-                        const SizedBox(height: 40),
-                        _buildSignupForm(),
-                        const SizedBox(height: 40),
-                        _buildLoginButton(),
-                      ],
-                    ),
+          width: double.infinity,
+          height: double.infinity,
+          decoration: BoxDecoration(
+            gradient: Theme.of(context).brightness == Brightness.dark
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Theme.of(context).colorScheme.background,
+                      Theme.of(context).colorScheme.surface,
+                      Theme.of(context).colorScheme.primary.withOpacity(0.05),
+                    ],
+                  )
+                : LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Theme.of(context).colorScheme.background,
+                      Theme.of(context).colorScheme.surface,
+                      Theme.of(context).colorScheme.primary.withOpacity(0.05),
+                    ],
                   ),
-                ),
-              ),
-            ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBackButton() {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: GestureDetector(
-        onTap: () => context.go('/login'),
-        child: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white.withValues(alpha: 0.1),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-          ),
-          child: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Column(
-      children: [
-        Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF00E5FF), Color(0xFF0099CC)],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF00E5FF).withValues(alpha: 0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: const Icon(Icons.person_add, size: 50, color: Colors.white),
-        ),
-        const SizedBox(height: 30),
-        ShaderMask(
-          shaderCallback: (bounds) => const LinearGradient(
-            colors: [Color(0xFF00E5FF), Color(0xFFFFFFFF)],
-          ).createShader(bounds),
-          child: Text(
-            'إنشاء حساب جديد',
-            style: GoogleFonts.tajawal(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          'انضم إلينا وابدأ رحلتك',
-          style: GoogleFonts.tajawal(
-            fontSize: 16,
-            color: Colors.white.withValues(alpha: 0.6),
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSignupForm() {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.white.withValues(alpha: 0.1),
-            Colors.white.withValues(alpha: 0.05),
-          ],
-        ),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.2),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            // Signup method selection
-            Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _isEmail = true),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: _isEmail ? const Color(0xFF00E5FF) : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.white30),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.email_outlined,
-                            color: _isEmail ? Colors.white : Colors.white70,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'بريد إلكتروني',
-                            style: GoogleFonts.tajawal(
-                              color: _isEmail ? Colors.white : Colors.white70,
-                              fontWeight: _isEmail ? FontWeight.bold : FontWeight.normal,
-                            ),
-                          ),
+          child: Stack(
+            children: [
+              // Shimmer Background Effect
+              AnimatedBuilder(
+                animation: _shimmerController,
+                builder: (context, child) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment(-1.0 + 2.0 * _shimmerController.value, -1.0),
+                        end: Alignment(1.0 + 2.0 * _shimmerController.value, 1.0),
+                        colors: [
+                          Colors.transparent,
+                          Theme.of(context).colorScheme.primary.withOpacity(0.03),
+                          Theme.of(context).colorScheme.secondary.withOpacity(0.02),
+                          Colors.transparent,
                         ],
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _isEmail = false),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: !_isEmail ? const Color(0xFF00E5FF) : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.white30),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.phone_outlined,
-                            color: !_isEmail ? Colors.white : Colors.white70,
-                            size: 18,
+                  );
+                },
+              ),
+              // Content
+              SafeArea(
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: SlideTransition(
+                        position: _slideAnimation,
+                        child: Container(
+                          constraints: const BoxConstraints(maxWidth: 420),
+                          child: Column(
+                            children: [
+                              // Logo/Icon Container
+                              Container(
+                                width: 100,
+                                height: 100,
+                                margin: const EdgeInsets.only(bottom: 32),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      Theme.of(context).colorScheme.primary,
+                                      Theme.of(context).colorScheme.secondary,
+                                    ],
+                                  ),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                      blurRadius: 20,
+                                      spreadRadius: 5,
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.person_add_outlined,
+                                  color: Colors.white,
+                                  size: 48,
+                                ),
+                              ),
+                              // Main Form Container
+                              Container(
+                                padding: const EdgeInsets.all(32),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surface.withOpacity(0.9),
+                                  borderRadius: BorderRadius.circular(32),
+                                  border: Border.all(
+                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                    width: 2,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+                                      blurRadius: 30,
+                                      spreadRadius: 10,
+                                    ),
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 10),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    // العنوان
+                                    Text(
+                                      'مرحباً بك',
+                                      style: GoogleFonts.tajawal(
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.w900,
+                                        color: Theme.of(context).colorScheme.onSurface,
+                                        height: 1.2,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      context.l10n.signup,
+                                      style: GoogleFonts.tajawal(
+                                        fontSize: 16,
+                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                        height: 1.5,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 40),
+                                    // نموذج التسجيل
+                                    Form(
+                                      key: _formKey,
+                                      child: Column(
+                                        children: [
+                                          _buildModernTextField(
+                                            controller: _nameController,
+                                            label: context.l10n.name,
+                                            icon: Icons.person_outline,
+                                            validator: (value) {
+                                              if (value?.isEmpty ?? true) {
+                                                return context.l10n.fieldRequired;
+                                              }
+                                              return null;
+                                            },
+                                          ),
+                                          const SizedBox(height: 20),
+                                          _buildModernTextField(
+                                            controller: _emailController,
+                                            label: context.l10n.email,
+                                            icon: Icons.email_outlined,
+                                            keyboardType: TextInputType.emailAddress,
+                                            validator: Validators.validateEmail,
+                                          ),
+                                          const SizedBox(height: 20),
+                                          _buildModernTextField(
+                                            controller: _passwordController,
+                                            label: context.l10n.password,
+                                            icon: Icons.lock_outline,
+                                            obscureText: _obscurePassword,
+                                            validator: Validators.validatePassword,
+                                            suffixIcon: IconButton(
+                                              icon: Icon(
+                                                _obscurePassword
+                                                    ? Icons.visibility_off_outlined
+                                                    : Icons.visibility_outlined,
+                                                color: Theme.of(context).colorScheme.primary,
+                                              ),
+                                              onPressed: () => setState(
+                                                () => _obscurePassword = !_obscurePassword,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 20),
+                                          _buildModernTextField(
+                                            controller: _confirmPasswordController,
+                                            label: context.l10n.confirmPassword,
+                                            icon: Icons.lock_outline,
+                                            obscureText: _obscureConfirmPassword,
+                                            validator: (value) {
+                                              if (value != _passwordController.text) {
+                                                return context.l10n.passwordsDoNotMatch;
+                                              }
+                                              return null;
+                                            },
+                                            suffixIcon: IconButton(
+                                              icon: Icon(
+                                                _obscureConfirmPassword
+                                                    ? Icons.visibility_off_outlined
+                                                    : Icons.visibility_outlined,
+                                                color: Theme.of(context).colorScheme.primary,
+                                              ),
+                                              onPressed: () => setState(
+                                                () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 32),
+                                          _buildModernButton(
+                                            onPressed: _isLoading ? null : _signup,
+                                            text: context.l10n.signup,
+                                            isLoading: _isLoading,
+                                            isPrimary: true,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 24),
+                                    // رابط تسجيل الدخول
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          context.l10n.alreadyHaveAccount,
+                                          style: GoogleFonts.tajawal(
+                                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        TextButton(
+                                          onPressed: () => context.go('/login'),
+                                          child: Text(
+                                            context.l10n.login,
+                                            style: GoogleFonts.tajawal(
+                                              color: Theme.of(context).colorScheme.primary,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'رقم هاتف',
-                            style: GoogleFonts.tajawal(
-                              color: !_isEmail ? Colors.white : Colors.white70,
-                              fontWeight: !_isEmail ? FontWeight.bold : FontWeight.normal,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            _buildModernInputField(
-              controller: _nameController,
-              label: 'الاسم الكامل',
-              icon: Icons.person_outline,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'الاسم مطلوب';
-                }
-                if (value.length < 2) {
-                  return 'الاسم يجب أن يكون حرفين على الأقل';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 24),
-            if (_isEmail) ...[
-              _buildModernInputField(
-                controller: _emailController,
-                label: 'البريد الإلكتروني',
-                icon: Icons.email_outlined,
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'البريد الإلكتروني مطلوب';
-                  }
-                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                    return 'البريد الإلكتروني غير صحيح';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-              _buildModernInputField(
-                controller: _passwordController,
-                label: 'كلمة المرور',
-                icon: Icons.lock_outline,
-                isPassword: true,
-                obscureText: _obscurePassword,
-                onObscureToggle: () => setState(() => _obscurePassword = !_obscurePassword),
-                validator: PasswordValidator.validate,
-                onChanged: (value) {
-                  setState(() {
-                    _passwordRequirements = PasswordValidator.checkRequirements(value);
-                    _showPasswordRequirements = value.isNotEmpty;
-                  });
-                },
-              ),
-              if (_showPasswordRequirements) ...[
-                const SizedBox(height: 16),
-                _buildPasswordRequirements(),
-              ],
-              const SizedBox(height: 24),
-              _buildModernInputField(
-                controller: _confirmPasswordController,
-                label: 'تأكيد كلمة المرور',
-                icon: Icons.lock_outline,
-                isPassword: true,
-                obscureText: _obscureConfirmPassword,
-                onObscureToggle: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'تأكيد كلمة المرور مطلوب';
-                  }
-                  if (value != _passwordController.text) {
-                    return 'كلمة المرور غير متطابقة';
-                  }
-                  return null;
-                },
-              ),
-            ] else ...[
-              _buildModernInputField(
-                controller: _phoneController,
-                label: 'رقم الهاتف',
-                icon: Icons.phone_outlined,
-                keyboardType: TextInputType.phone,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'رقم الهاتف مطلوب';
-                  }
-                  if (!RegExp(r'^[0-9]{8,9}$').hasMatch(value)) {
-                    return 'رقم الهاتف غير صحيح';
-                  }
-                  return null;
-                },
               ),
             ],
-            const SizedBox(height: 24),
-            _buildTermsCheckbox(),
-            const SizedBox(height: 32),
-            _buildModernSignupButton(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPasswordRequirements() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.white.withValues(alpha: 0.05),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'متطلبات كلمة المرور:',
-            style: GoogleFonts.tajawal(
-              color: Colors.white70,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          _buildRequirement('8 أحرف على الأقل', 'length'),
-          _buildRequirement('حرف كبير واحد (A-Z)', 'uppercase'),
-          _buildRequirement('حرف صغير واحد (a-z)', 'lowercase'),
-          _buildRequirement('رقم واحد (0-9)', 'number'),
-          _buildRequirement('رمز خاص (!@#\$%^&*)', 'special'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRequirement(String text, String key) {
-    final isValid = _passwordRequirements[key] == true;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Icon(
-            isValid ? Icons.check_circle : Icons.radio_button_unchecked,
-            size: 16,
-            color: isValid ? const Color(0xFF00E5FF) : Colors.white30,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            text,
-            style: GoogleFonts.tajawal(
-              color: isValid
-                  ? const Color(0xFF00E5FF)
-                  : Colors.white.withValues(alpha: 0.5),
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTermsCheckbox() {
-    return Row(
-      children: [
-        GestureDetector(
-          onTap: () => setState(() => _acceptTerms = !_acceptTerms),
-          child: Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: _acceptTerms ? const Color(0xFF00E5FF) : Colors.white30,
-                width: 2,
-              ),
-              color: _acceptTerms
-                  ? const Color(0xFF00E5FF)
-                  : Colors.transparent,
-            ),
-            child: _acceptTerms
-                ? const Icon(Icons.check, color: Colors.white, size: 16)
-                : null,
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: RichText(
-            text: TextSpan(
-              style: GoogleFonts.tajawal(fontSize: 14, color: Colors.white70),
-              children: [
-                const TextSpan(text: 'أوافق على '),
-                TextSpan(
-                  text: 'الشروط والأحكام',
-                  style: GoogleFonts.tajawal(
-                    color: const Color(0xFF00E5FF),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const TextSpan(text: ' و '),
-                TextSpan(
-                  text: 'سياسة الخصوصية',
-                  style: GoogleFonts.tajawal(
-                    color: const Color(0xFF00E5FF),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildModernInputField({
+  Widget _buildModernTextField({
     required TextEditingController controller,
     required String label,
     required IconData icon,
-    bool isPassword = false,
-    bool obscureText = false,
-    VoidCallback? onObscureToggle,
     TextInputType? keyboardType,
+    bool obscureText = false,
     String? Function(String?)? validator,
-    Function(String)? onChanged,
+    Widget? suffixIcon,
   }) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.white.withValues(alpha: 0.1),
-            Colors.white.withValues(alpha: 0.05),
+            Theme.of(context).colorScheme.surface,
+            Theme.of(context).colorScheme.primary.withOpacity(0.02),
+            Theme.of(context).colorScheme.surface,
           ],
         ),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.3),
-          width: 1.5,
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+          width: 2,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
+            blurRadius: 20,
+            spreadRadius: 2,
+          ),
+        ],
       ),
       child: TextFormField(
         controller: controller,
-        obscureText: obscureText,
         keyboardType: keyboardType,
-        style: GoogleFonts.tajawal(color: Colors.white, fontSize: 16),
+        obscureText: obscureText,
         validator: validator,
-        onChanged: onChanged,
+        style: GoogleFonts.tajawal(
+          color: Theme.of(context).colorScheme.onSurface,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+        textDirection: TextDirection.rtl,
         decoration: InputDecoration(
-          filled: false,
           labelText: label,
-          labelStyle: GoogleFonts.tajawal(color: Colors.white70, fontSize: 14),
+          labelStyle: GoogleFonts.tajawal(
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
           prefixIcon: Container(
-            margin: const EdgeInsets.all(12),
-            padding: const EdgeInsets.all(8),
+            margin: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
               gradient: LinearGradient(
                 colors: [
-                  const Color(0xFF00E5FF).withValues(alpha: 0.2),
-                  const Color(0xFF0099CC).withValues(alpha: 0.1),
+                  Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  Theme.of(context).colorScheme.secondary.withOpacity(0.1),
                 ],
               ),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: const Color(0xFF00E5FF), size: 20),
-          ),
-          suffixIcon: isPassword
-              ? IconButton(
-                  icon: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: Colors.white.withValues(alpha: 0.1),
-                    ),
-                    child: Icon(
-                      obscureText
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                      color: Colors.white70,
-                      size: 20,
-                    ),
-                  ),
-                  onPressed: onObscureToggle,
-                )
-              : null,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(
-              color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
-              width: 2,
+            child: Icon(
+              icon,
+              color: Theme.of(context).colorScheme.primary,
+              size: 24,
             ),
           ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 20,
-          ),
+          suffixIcon: suffixIcon,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         ),
       ),
     );
   }
 
-  Widget _buildModernSignupButton() {
+  Widget _buildModernButton({
+    required VoidCallback? onPressed,
+    required String text,
+    IconData? icon,
+    bool isLoading = false,
+    bool isPrimary = true,
+  }) {
     return Container(
-      width: double.infinity,
-      height: 56,
+      height: 58,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
+        gradient: isPrimary ? LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF00E5FF), Color(0xFF0099CC)],
+          colors: [
+            Theme.of(context).colorScheme.primary,
+            Theme.of(context).colorScheme.secondary,
+          ],
+        ) : null,
+        color: isPrimary ? null : Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        border: isPrimary ? null : Border.all(
+          color: Theme.of(context).colorScheme.primary,
+          width: 2,
         ),
-        boxShadow: [
+        boxShadow: isPrimary ? [
           BoxShadow(
-            color: const Color(0xFF00E5FF).withValues(alpha: 0.4),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
             blurRadius: 20,
-            offset: const Offset(0, 10),
+            spreadRadius: 2,
           ),
-          BoxShadow(
-            color: const Color(0xFF00E5FF).withValues(alpha: 0.2),
-            blurRadius: 40,
-            offset: const Offset(0, 20),
-          ),
-        ],
+        ] : null,
       ),
       child: ElevatedButton(
-        onPressed: (_isLoading || !_acceptTerms) ? null : _handleSignup,
+        onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
           ),
+          elevation: 0,
         ),
-        child: _isLoading
+        child: isLoading
             ? const SizedBox(
                 width: 24,
                 height: 24,
                 child: CircularProgressIndicator(
+                  color: Colors.white,
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  if (icon != null) ...[
+                    Icon(
+                      icon,
+                      color: isPrimary ? Colors.white : Theme.of(context).colorScheme.primary,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                  ],
                   Text(
-                    'إنشاء الحساب',
+                    text,
                     style: GoogleFonts.tajawal(
                       fontSize: 18,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
+                      color: isPrimary ? Colors.white : Theme.of(context).colorScheme.primary,
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Icon(
-                    Icons.arrow_forward,
-                    color: Colors.white,
-                    size: 20,
                   ),
                 ],
               ),
-      ),
-    );
-  }
-
-  Widget _buildLoginButton() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'لديك حساب بالفعل؟ ',
-            style: GoogleFonts.tajawal(
-              color: Colors.white.withValues(alpha: 0.6),
-              fontSize: 16,
-            ),
-          ),
-          TextButton(
-            onPressed: () => context.go('/login'),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            ),
-            child: Text(
-              'تسجيل الدخول',
-              style: GoogleFonts.tajawal(
-                color: const Color(0xFF00E5FF),
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

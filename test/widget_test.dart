@@ -7,15 +7,13 @@
 
 
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:qasetha/main.dart';
+import 'package:qasetha/services/theme_service.dart';
 
 void main() {
   testWidgets('App launches without crashing', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const QasethaApp());
-    
-    // Verify that the app builds successfully
+    final themeService = ThemeService();
+    await tester.pumpWidget(QasethaApp(themeService: themeService));
     expect(find.byType(QasethaApp), findsOneWidget);
   });
 }

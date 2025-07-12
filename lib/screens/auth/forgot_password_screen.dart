@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:logger/logger.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../../services/firebase_auth_service.dart';
+
+import '../../utils/validators.dart';
+import '../../widgets/auth_scaffold.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -11,88 +14,86 @@ class ForgotPasswordScreen extends StatefulWidget {
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  final TextEditingController _contactController = TextEditingController();
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final Logger _logger = Logger();
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with TickerProviderStateMixin {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+
   bool _isLoading = false;
-  bool _isEmail = true;
+  bool _isEmailMode = true;
+
+  late AnimationController _slideController;
+  late AnimationController _fadeController;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.fastOutSlowIn,
+    ));
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeIn,
+    ));
+
+    _slideController.forward();
+    _fadeController.forward();
+  }
 
   @override
   void dispose() {
-    _contactController.dispose();
+    _emailController.dispose();
+    _slideController.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleForgotPassword() async {
+  Future<void> _resetPassword() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
-      final contact = _contactController.text.trim();
+      if (_isEmailMode) {
+        final service = FirebaseAuthService();
+        final result = await service.sendPasswordResetEmail(
+          email: _emailController.text.trim(),
+        );
 
-      if (_isEmail) {
-        // Send password reset email
-        await FirebaseAuth.instance.sendPasswordResetEmail(email: contact);
-        
-        if (!mounted) return;
-        
-        _logger.i('Password reset email sent to: $contact');
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني',
-              style: GoogleFonts.tajawal(),
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
-        
-        context.go('/login');
+        if (mounted) {
+          if (result.success) {
+            _showSnackBar('تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني');
+            context.go('/login');
+          } else {
+            _showSnackBar(result.message, isError: true);
+          }
+        }
       } else {
-        // Send OTP for phone
-        final phoneNumber = '+962$contact';
-        
-        await FirebaseAuth.instance.verifyPhoneNumber(
-          phoneNumber: phoneNumber,
-          verificationCompleted: (PhoneAuthCredential credential) async {
-            // Auto verification completed
-          },
-          verificationFailed: (FirebaseAuthException e) {
-            if (!mounted) return;
-            throw e.message ?? 'فشل في إرسال رمز التحقق';
-          },
-          codeSent: (String verificationId, int? resendToken) {
-            if (!mounted) return;
-            
-            _logger.i('OTP sent to: $phoneNumber');
-            
-            context.go('/otp', extra: {
-              'verificationId': verificationId,
-              'from': 'forgot-password'
-            });
-          },
-          codeAutoRetrievalTimeout: (String verificationId) {
-            // Timeout
-          },
-        );
+        context.go('/otp', extra: {
+          'phoneNumber': _emailController.text.trim(),
+          'source': 'forgot-password',
+        });
       }
     } catch (e) {
-      _logger.e('Forgot password error: $e');
-      
-      if (!mounted) return;
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            e.toString(),
-            style: GoogleFonts.tajawal(),
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        _showSnackBar('خطأ: $e', isError: true);
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -100,107 +101,126 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
   }
 
-  Widget _buildBackButton() {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: GestureDetector(
-        onTap: () => context.go('/login'),
-        child: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white.withValues(alpha: 0.1),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-          ),
-          child: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
-        ),
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.tajawal(color: Colors.white)),
+        backgroundColor: isError ? Theme.of(context).colorScheme.error : Colors.green,
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        body: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF0A0E21),
-                Color(0xFF1A1B3A),
-                Color(0xFF2D1B69),
-                Color(0xFF0A192F),
-              ],
-              stops: [0.0, 0.3, 0.7, 1.0],
-            ),
-          ),
-          child: SafeArea(
+    return AuthScaffold(
+          title: 'نسيت كلمة المرور',
+          child: Center(
             child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildBackButton(),
-                    const SizedBox(height: 20),
-                    Text(
-                      'نسيت كلمة السر',
-                      style: GoogleFonts.tajawal(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+              padding: const EdgeInsets.all(24),
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: SlideTransition(
+                  position: _slideAnimation,
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 400),
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                        width: 1.5,
                       ),
-                      textAlign: TextAlign.center,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                          blurRadius: 40,
+                          spreadRadius: 8,
+                        ),
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 60),
-                    Form(
-                      key: _formKey,
-                      child: Column(
-                        children: [
-                          Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Icon(
+                          Icons.lock_reset,
+                          size: 64,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        Text(
+                          'نسيت كلمة المرور؟',
+                          style: GoogleFonts.tajawal(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        Text(
+                          'لا تقلق، سنساعدك في استعادة حسابك',
+                          style: GoogleFonts.tajawal(
+                            fontSize: 14,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+
+                        const SizedBox(height: 32),
+
+                        // تبديل بين البريد والهاتف
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                          child: Row(
                             children: [
                               Expanded(
                                 child: GestureDetector(
-                                  onTap: () => setState(() => _isEmail = true),
+                                  onTap: () => setState(() => _isEmailMode = true),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(vertical: 12),
                                     decoration: BoxDecoration(
-                                      color: _isEmail ? const Color(0xFF00E5FF) : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: Colors.white30),
+                                      color: _isEmailMode ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(25),
                                     ),
                                     child: Text(
-                                      'بريد إلكتروني',
+                                      'البريد الإلكتروني',
                                       style: GoogleFonts.tajawal(
-                                        color: _isEmail ? Colors.white : Colors.white70,
-                                        fontWeight: _isEmail ? FontWeight.bold : FontWeight.normal,
+                                        color: _isEmailMode ? Colors.white : Theme.of(context).colorScheme.onSurface,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 16),
                               Expanded(
                                 child: GestureDetector(
-                                  onTap: () => setState(() => _isEmail = false),
+                                  onTap: () => setState(() => _isEmailMode = false),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(vertical: 12),
                                     decoration: BoxDecoration(
-                                      color: !_isEmail ? const Color(0xFF00E5FF) : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: Colors.white30),
+                                      color: !_isEmailMode ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(25),
                                     ),
                                     child: Text(
-                                      'رقم هاتف',
+                                      'رقم الهاتف',
                                       style: GoogleFonts.tajawal(
-                                        color: !_isEmail ? Colors.white : Colors.white70,
-                                        fontWeight: !_isEmail ? FontWeight.bold : FontWeight.normal,
+                                        color: !_isEmailMode ? Colors.white : Theme.of(context).colorScheme.onSurface,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
@@ -209,92 +229,150 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 24),
-                          TextFormField(
-                            controller: _contactController,
-                            keyboardType: _isEmail ? TextInputType.emailAddress : TextInputType.phone,
-                            style: GoogleFonts.tajawal(color: Colors.white),
-                            decoration: InputDecoration(
-                              labelText: _isEmail ? 'البريد الإلكتروني' : 'رقم الهاتف',
-                              labelStyle: GoogleFonts.tajawal(color: Colors.white70),
-                              hintText: !_isEmail ? '7xxxxxxxx' : null,
-                              hintStyle: !_isEmail ? GoogleFonts.tajawal(color: Colors.white38) : null,
-                              prefixIcon: _isEmail
-                                  ? const Icon(
-                                      Icons.email_outlined,
-                                      color: Color(0xFF00E5FF),
-                                    )
-                                  : Container(
-                                      margin: const EdgeInsets.all(12),
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(8),
-                                        color: const Color(0xFF00E5FF).withValues(alpha: 0.2),
-                                      ),
-                                      child: Text(
-                                        '+962',
-                                        style: GoogleFonts.tajawal(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                          color: const Color(0xFF00E5FF),
-                                        ),
-                                      ),
-                                    ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        Form(
+                          key: _formKey,
+                          child: Column(
+                            children: [
+                              _buildTextField(
+                                controller: _emailController,
+                                label: _isEmailMode 
+                                  ? 'البريد الإلكتروني'
+                                  : 'رقم الهاتف',
+                                icon: _isEmailMode ? Icons.email_outlined : Icons.phone_outlined,
+                                keyboardType: _isEmailMode ? TextInputType.emailAddress : TextInputType.phone,
+                                validator: _isEmailMode ? Validators.validateEmail : Validators.validatePhone,
                               ),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return _isEmail ? 'البريد الإلكتروني مطلوب' : 'رقم الهاتف مطلوب';
-                              }
-                              if (_isEmail && !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                                return 'البريد الإلكتروني غير صحيح';
-                              }
-                              if (!_isEmail && !RegExp(r'^[0-9]{8,9}$').hasMatch(value)) {
-                                return 'رقم الهاتف غير صحيح';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 32),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 56,
-                            child: ElevatedButton(
-                              onPressed: _isLoading ? null : _handleForgotPassword,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF00E5FF),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
+
+                              const SizedBox(height: 24),
+
+                              Container(
+                                height: 58,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      Theme.of(context).colorScheme.primary,
+                                      Theme.of(context).colorScheme.secondary,
+                                      Theme.of(context).colorScheme.tertiary,
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+                                      blurRadius: 20,
+                                      spreadRadius: 2,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
+                                ),
+                                child: ElevatedButton(
+                                  onPressed: _isLoading ? null : _resetPassword,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    shadowColor: Colors.transparent,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                  child: _isLoading
+                                      ? const CircularProgressIndicator(color: Colors.white)
+                                      : Text(
+                                          'إرسال رابط الاستعادة',
+                                          style: GoogleFonts.tajawal(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                 ),
                               ),
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                      ),
-                                    )
-                                  : Text(
-                                      _isEmail ? 'إرسال رابط الإعادة' : 'إرسال رمز التحقق',
-                                      style: GoogleFonts.tajawal(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        TextButton(
+                          onPressed: () => context.go('/login'),
+                          child: Text(
+                            'العودة لتسجيل الدخول',
+                            style: GoogleFonts.tajawal(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Theme.of(context).colorScheme.surface,
+            Theme.of(context).colorScheme.primary.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        validator: validator,
+        style: GoogleFonts.tajawal(
+          color: Theme.of(context).colorScheme.onSurface,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+        textDirection: TextDirection.rtl,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: GoogleFonts.tajawal(
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            fontSize: 14,
+          ),
+          prefixIcon: Icon(
+            icon,
+            color: Theme.of(context).colorScheme.primary,
+            size: 22,
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         ),
       ),
     );
