@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../services/locale_service.dart';
+import 'package:go_router/go_router.dart';
 import '../../utils/app_localizations.dart';
 import '../../widgets/app_controls.dart';
 
@@ -38,12 +37,8 @@ class AppSettingsScreen extends StatelessWidget {
           child: Stack(
             children: [
               // أزرار التحكم
-              Positioned(
-                top: 16,
-                right: 16,
-                child: const AppControls(),
-              ),
-              
+              Positioned(top: 16, right: 16, child: const AppControls()),
+
               // زر الرجوع
               Positioned(
                 top: 16,
@@ -52,13 +47,14 @@ class AppSettingsScreen extends StatelessWidget {
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.arrow_back),
                   style: IconButton.styleFrom(
-                    backgroundColor: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.black.withOpacity(0.3)
-                        : Colors.white.withOpacity(0.3),
+                    backgroundColor:
+                        Theme.of(context).brightness == Brightness.dark
+                        ? Colors.black.withValues(alpha: 0.3)
+                        : Colors.white.withValues(alpha: 0.3),
                   ),
                 ),
               ),
-              
+
               // المحتوى الرئيسي
               Center(
                 child: SingleChildScrollView(
@@ -70,7 +66,11 @@ class AppSettingsScreen extends StatelessWidget {
                         // العنوان
                         ShaderMask(
                           shaderCallback: (bounds) => const LinearGradient(
-                            colors: [Color(0xFF00E5FF), Color(0xFF3A7BD5), Colors.white],
+                            colors: [
+                              Color(0xFF00E5FF),
+                              Color(0xFF3A7BD5),
+                              Colors.white,
+                            ],
                           ).createShader(bounds),
                           child: Text(
                             context.l10n.language,
@@ -82,9 +82,97 @@ class AppSettingsScreen extends StatelessWidget {
                             textAlign: TextAlign.center,
                           ),
                         ),
-                        
+
                         const SizedBox(height: 40),
-                        
+
+                        // قسم اللغة
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? [
+                                      Colors.white.withValues(alpha: 0.1),
+                                      Colors.white.withValues(alpha: 0.05),
+                                    ]
+                                  : [
+                                      Colors.white.withValues(alpha: 0.9),
+                                      Colors.white.withValues(alpha: 0.7),
+                                    ],
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withValues(alpha: 0.3),
+                              width: 1.5,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.primary.withValues(alpha: 0.1),
+                                blurRadius: 20,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: InkWell(
+                            onTap: () => context.push('/language-settings'),
+                            borderRadius: BorderRadius.circular(16),
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary
+                                          .withValues(alpha: 0.2),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      Icons.language_outlined,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Text(
+                                      context.l10n.language,
+                                      style: GoogleFonts.tajawal(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(
+                                          context,
+                                        ).textTheme.titleLarge?.color,
+                                      ),
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.arrow_forward_ios,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                    size: 18,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
                         // قسم الثيم
                         Container(
                           padding: const EdgeInsets.all(24),
@@ -92,24 +180,30 @@ class AppSettingsScreen extends StatelessWidget {
                             gradient: LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                              colors: Theme.of(context).brightness == Brightness.dark
+                              colors:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
                                   ? [
-                                      Colors.white.withOpacity(0.1),
-                                      Colors.white.withOpacity(0.05),
+                                      Colors.white.withValues(alpha: 0.1),
+                                      Colors.white.withValues(alpha: 0.05),
                                     ]
                                   : [
-                                      Colors.white.withOpacity(0.9),
-                                      Colors.white.withOpacity(0.7),
+                                      Colors.white.withValues(alpha: 0.9),
+                                      Colors.white.withValues(alpha: 0.7),
                                     ],
                             ),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withValues(alpha: 0.3),
                               width: 1.5,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.primary.withValues(alpha: 0.1),
                                 blurRadius: 20,
                                 spreadRadius: 2,
                               ),
@@ -122,12 +216,17 @@ class AppSettingsScreen extends StatelessWidget {
                                   Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary
+                                          .withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Icon(
                                       Icons.palette_outlined,
-                                      color: Theme.of(context).colorScheme.primary,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
                                       size: 24,
                                     ),
                                   ),
@@ -137,7 +236,9 @@ class AppSettingsScreen extends StatelessWidget {
                                     style: GoogleFonts.tajawal(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
-                                      color: Theme.of(context).textTheme.titleLarge?.color,
+                                      color: Theme.of(
+                                        context,
+                                      ).textTheme.titleLarge?.color,
                                     ),
                                   ),
                                 ],
@@ -146,7 +247,9 @@ class AppSettingsScreen extends StatelessWidget {
                               Text(
                                 'الثيم يتبدل تلقائياً حسب إعدادات الجهاز',
                                 style: GoogleFonts.tajawal(
-                                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                                  color: Theme.of(
+                                    context,
+                                  ).textTheme.bodyMedium?.color,
                                 ),
                                 textAlign: TextAlign.center,
                               ),

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
+import '../screens/auth/forgot_password_screen.dart';
 import '../screens/auth/phone_login_screen.dart';
 import '../screens/auth/phone_signup_screen.dart';
 import '../screens/auth/otp_verify_screen.dart';
@@ -15,10 +16,22 @@ import '../screens/settings/app_settings_screen.dart';
 
 import '../screens/onboarding/onboarding_screen.dart';
 import '../screens/home_screen.dart';
+import '../screens/language_selection_screen.dart';
+import '../screens/settings/language_settings_screen.dart';
 
 final GoRouter appRouter = GoRouter(
-  initialLocation: '/onboarding',
+  initialLocation: '/language-selection',
   routes: [
+    GoRoute(
+      path: '/language-selection',
+      pageBuilder: (context, state) => CustomTransitionPage(
+        key: state.pageKey,
+        child: const LanguageSelectionScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    ),
     GoRoute(
       path: '/onboarding',
       pageBuilder: (context, state) => CustomTransitionPage(
@@ -151,6 +164,8 @@ final GoRouter appRouter = GoRouter(
           key: state.pageKey,
           child: OtpVerifyScreen(
             phoneNumber: extra?['phoneNumber'] ?? '',
+            name: extra?['name'],
+            source: extra?['source'],
           ),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return ScaleTransition(
@@ -241,6 +256,44 @@ final GoRouter appRouter = GoRouter(
       pageBuilder: (context, state) => CustomTransitionPage(
         key: state.pageKey,
         child: const AppSettingsScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(
+            position: animation.drive(
+              Tween(begin: const Offset(1.0, 0.0), end: Offset.zero)
+                  .chain(CurveTween(curve: Curves.easeInOutCubic)),
+            ),
+            child: child,
+          );
+        },
+      ),
+    ),
+    GoRoute(
+      path: '/forgot-password',
+      pageBuilder: (context, state) => CustomTransitionPage(
+        key: state.pageKey,
+        child: const ForgotPasswordScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(
+            position: animation.drive(
+              Tween(begin: const Offset(0.0, 1.0), end: Offset.zero)
+                  .chain(CurveTween(curve: Curves.easeOutCubic)),
+            ),
+            child: FadeTransition(
+              opacity: animation.drive(
+                Tween(begin: 0.0, end: 1.0)
+                    .chain(CurveTween(curve: Curves.easeOut)),
+              ),
+              child: child,
+            ),
+          );
+        },
+      ),
+    ),
+    GoRoute(
+      path: '/language-settings',
+      pageBuilder: (context, state) => CustomTransitionPage(
+        key: state.pageKey,
+        child: const LanguageSettingsScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(
             position: animation.drive(

@@ -20,15 +20,38 @@ void main() async {
   runApp(QasethaApp(themeService: themeService));
 }
 
-class QasethaApp extends StatelessWidget {
+class QasethaApp extends StatefulWidget {
   final ThemeService themeService;
   
   const QasethaApp({super.key, required this.themeService});
 
   @override
+  State<QasethaApp> createState() => _QasethaAppState();
+}
+
+class _QasethaAppState extends State<QasethaApp> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkFirstTimeLanguageSelection();
+    });
+  }
+
+  void _checkFirstTimeLanguageSelection() {
+    if (widget.themeService.isFirstTimeLanguageSelection) {
+      // التوجه لشاشة اختيار اللغة
+      appRouter.go('/language-selection');
+    } else {
+      // التوجه للشاشة العادية
+      appRouter.go('/onboarding');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
-      value: themeService,
+      value: widget.themeService,
       child: Consumer<ThemeService>(
         builder: (context, themeService, child) {
           return MaterialApp.router(
@@ -38,6 +61,15 @@ class QasethaApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             themeMode: themeService.themeMode,
             locale: Locale(themeService.languageCode),
+            localeResolutionCallback: (locale, supportedLocales) {
+              if (themeService.savedLanguageCode == 'system') {
+                if (locale != null && supportedLocales.any((l) => l.languageCode == locale.languageCode)) {
+                  return locale;
+                }
+                return const Locale('ar');
+              }
+              return Locale(themeService.languageCode);
+            },
             localizationsDelegates: const [
               AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
@@ -50,7 +82,12 @@ class QasethaApp extends StatelessWidget {
                 textDirection: themeService.languageCode == 'ar' 
                     ? TextDirection.rtl 
                     : TextDirection.ltr,
-                child: child!,
+                child: MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    textScaler: const TextScaler.linear(1.0),
+                  ),
+                  child: child!,
+                ),
               );
             },
             routerConfig: appRouter,

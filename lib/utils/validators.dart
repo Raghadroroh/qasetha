@@ -1,6 +1,8 @@
-import '../constants/app_strings.dart';
+
 
 /// مدققات البيانات - جميع عمليات التحقق مركزة هنا
+import '../constants/app_strings.dart';
+
 class Validators {
   /// تحقق من الاسم الكامل
   static String? validateName(String? value) {

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../constants/app_strings.dart';
+
 import '../../utils/app_localizations.dart';
 import '../../services/firebase_auth_service.dart';
 import '../../services/firebase_service.dart';
 import '../../utils/validators.dart';
-import '../../widgets/auth_scaffold.dart';
+
+import '../../widgets/app_controls.dart';
+import '../../widgets/back_button_handler.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -19,6 +21,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
@@ -75,6 +78,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _slideController.dispose();
@@ -97,7 +101,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
 
       if (mounted) {
         if (result.success) {
-          _showSnackBar('تم إنشاء الحساب بنجاح');
+          _showSnackBar(context.l10n.accountCreated);
           context.go('/verify-email');
         } else {
           _showSnackBar(result.message, isError: true);
@@ -105,12 +109,24 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
       }
     } catch (e) {
       if (mounted) {
-        _showSnackBar('خطأ: $e', isError: true);
+        _showSnackBar('${context.l10n.error}: $e', isError: true);
       }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  Future<void> _signupWithPhone() async {
+    if (!_formKey.currentState!.validate()) return;
+    
+    if (mounted) {
+      context.go('/otp-verify', extra: {
+        'phoneNumber': _phoneController.text.trim(),
+        'name': _nameController.text.trim(),
+        'source': 'signup'
+      });
     }
   }
 
@@ -126,11 +142,8 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: true,
-      onPopInvoked: (didPop) {
-        if (!didPop) context.go('/login');
-      },
+    return BackButtonHandler(
+      fallbackRoute: '/login',
       child: Scaffold(
         body: Container(
           width: double.infinity,
@@ -178,6 +191,14 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                   );
                 },
               ),
+              // App Controls
+              Positioned(
+                top: 16,
+                right: 16,
+                child: SafeArea(
+                  child: const AppControls(),
+                ),
+              ),
               // Content
               SafeArea(
                 child: Center(
@@ -224,10 +245,12 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                               Container(
                                 padding: const EdgeInsets.all(32),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surface.withOpacity(0.9),
+                                  color: Theme.of(context).brightness == Brightness.dark 
+                                      ? Theme.of(context).colorScheme.surface.withOpacity(0.9)
+                                      : Colors.white.withOpacity(0.85),
                                   borderRadius: BorderRadius.circular(32),
                                   border: Border.all(
-                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                                     width: 2,
                                   ),
                                   boxShadow: [
@@ -248,7 +271,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                                   children: [
                                     // العنوان
                                     Text(
-                                      'مرحباً بك',
+                                      context.l10n.welcome,
                                       style: GoogleFonts.tajawal(
                                         fontSize: 32,
                                         fontWeight: FontWeight.w900,
@@ -267,7 +290,67 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
-                                    const SizedBox(height: 40),
+                                    const SizedBox(height: 32),
+                                    // Toggle Buttons
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: GestureDetector(
+                                              onTap: () => setState(() => _isEmailMode = true),
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                                decoration: BoxDecoration(
+                                                  color: _isEmailMode 
+                                                      ? Theme.of(context).colorScheme.primary
+                                                      : Colors.transparent,
+                                                  borderRadius: BorderRadius.circular(16),
+                                                ),
+                                                child: Text(
+                                                  'البريد الإلكتروني',
+                                                  textAlign: TextAlign.center,
+                                                  style: GoogleFonts.tajawal(
+                                                    color: _isEmailMode 
+                                                        ? Colors.white 
+                                                        : Theme.of(context).colorScheme.primary,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: GestureDetector(
+                                              onTap: () => setState(() => _isEmailMode = false),
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                                decoration: BoxDecoration(
+                                                  color: !_isEmailMode 
+                                                      ? Theme.of(context).colorScheme.primary
+                                                      : Colors.transparent,
+                                                  borderRadius: BorderRadius.circular(16),
+                                                ),
+                                                child: Text(
+                                                  'رقم الهاتف',
+                                                  textAlign: TextAlign.center,
+                                                  style: GoogleFonts.tajawal(
+                                                    color: !_isEmailMode 
+                                                        ? Colors.white 
+                                                        : Theme.of(context).colorScheme.primary,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 24),
                                     // نموذج التسجيل
                                     Form(
                                       key: _formKey,
@@ -285,59 +368,74 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                                             },
                                           ),
                                           const SizedBox(height: 20),
-                                          _buildModernTextField(
-                                            controller: _emailController,
-                                            label: context.l10n.email,
-                                            icon: Icons.email_outlined,
-                                            keyboardType: TextInputType.emailAddress,
-                                            validator: Validators.validateEmail,
-                                          ),
-                                          const SizedBox(height: 20),
-                                          _buildModernTextField(
-                                            controller: _passwordController,
-                                            label: context.l10n.password,
-                                            icon: Icons.lock_outline,
-                                            obscureText: _obscurePassword,
-                                            validator: Validators.validatePassword,
-                                            suffixIcon: IconButton(
-                                              icon: Icon(
-                                                _obscurePassword
-                                                    ? Icons.visibility_off_outlined
-                                                    : Icons.visibility_outlined,
-                                                color: Theme.of(context).colorScheme.primary,
-                                              ),
-                                              onPressed: () => setState(
-                                                () => _obscurePassword = !_obscurePassword,
+                                          if (_isEmailMode) ...[
+                                            _buildModernTextField(
+                                              controller: _emailController,
+                                              label: context.l10n.email,
+                                              icon: Icons.email_outlined,
+                                              keyboardType: TextInputType.emailAddress,
+                                              validator: Validators.validateEmail,
+                                            ),
+                                            const SizedBox(height: 20),
+                                            _buildModernTextField(
+                                              controller: _passwordController,
+                                              label: context.l10n.password,
+                                              icon: Icons.lock_outline,
+                                              obscureText: _obscurePassword,
+                                              validator: Validators.validatePassword,
+                                              suffixIcon: IconButton(
+                                                icon: Icon(
+                                                  _obscurePassword
+                                                      ? Icons.visibility_off_outlined
+                                                      : Icons.visibility_outlined,
+                                                  color: Theme.of(context).colorScheme.primary,
+                                                ),
+                                                onPressed: () => setState(
+                                                  () => _obscurePassword = !_obscurePassword,
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                          const SizedBox(height: 20),
-                                          _buildModernTextField(
-                                            controller: _confirmPasswordController,
-                                            label: context.l10n.confirmPassword,
-                                            icon: Icons.lock_outline,
-                                            obscureText: _obscureConfirmPassword,
-                                            validator: (value) {
-                                              if (value != _passwordController.text) {
-                                                return context.l10n.passwordsDoNotMatch;
-                                              }
-                                              return null;
-                                            },
-                                            suffixIcon: IconButton(
-                                              icon: Icon(
-                                                _obscureConfirmPassword
-                                                    ? Icons.visibility_off_outlined
-                                                    : Icons.visibility_outlined,
-                                                color: Theme.of(context).colorScheme.primary,
-                                              ),
-                                              onPressed: () => setState(
-                                                () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                                            const SizedBox(height: 20),
+                                            _buildModernTextField(
+                                              controller: _confirmPasswordController,
+                                              label: context.l10n.confirmPassword,
+                                              icon: Icons.lock_outline,
+                                              obscureText: _obscureConfirmPassword,
+                                              validator: (value) {
+                                                if (value != _passwordController.text) {
+                                                  return context.l10n.passwordsDoNotMatch;
+                                                }
+                                                return null;
+                                              },
+                                              suffixIcon: IconButton(
+                                                icon: Icon(
+                                                  _obscureConfirmPassword
+                                                      ? Icons.visibility_off_outlined
+                                                      : Icons.visibility_outlined,
+                                                  color: Theme.of(context).colorScheme.primary,
+                                                ),
+                                                onPressed: () => setState(
+                                                  () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                                                ),
                                               ),
                                             ),
-                                          ),
+                                          ] else ...[
+                                            _buildModernTextField(
+                                              controller: _phoneController,
+                                              label: 'رقم الهاتف',
+                                              icon: Icons.phone_outlined,
+                                              keyboardType: TextInputType.phone,
+                                              validator: (value) {
+                                                if (value?.isEmpty ?? true) {
+                                                  return 'يرجى إدخال رقم الهاتف';
+                                                }
+                                                return null;
+                                              },
+                                            ),
+                                          ],
                                           const SizedBox(height: 32),
                                           _buildModernButton(
-                                            onPressed: _isLoading ? null : _signup,
+                                            onPressed: _isLoading ? null : (_isEmailMode ? _signup : _signupWithPhone),
                                             text: context.l10n.signup,
                                             isLoading: _isLoading,
                                             isPrimary: true,
@@ -411,13 +509,13 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
-            blurRadius: 20,
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            blurRadius: 15,
             spreadRadius: 2,
           ),
         ],
@@ -432,7 +530,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
-        textDirection: TextDirection.rtl,
+        textDirection: context.textDirection,
         decoration: InputDecoration(
           labelText: label,
           labelStyle: GoogleFonts.tajawal(

@@ -1,32 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../constants/app_colors.dart';
-import '../../constants/app_strings.dart';
+import '../../widgets/back_button_handler.dart';
+import '../../utils/app_localizations.dart';
 
 class OtpVerifyScreen extends StatefulWidget {
   final String phoneNumber;
+  final String? name;
+  final String? source;
   
   const OtpVerifyScreen({
     super.key,
     required this.phoneNumber,
+    this.name,
+    this.source,
   });
 
   @override
   State<OtpVerifyScreen> createState() => _OtpVerifyScreenState();
 }
 
-class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
+class _OtpVerifyScreenState extends State<OtpVerifyScreen> with TickerProviderStateMixin {
   final List<TextEditingController> _otpControllers = List.generate(6, (index) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
   bool _isLoading = false;
   int _remainingSeconds = 60;
+  
+  late AnimationController _shimmerController;
 
   @override
   void initState() {
     super.initState();
+    _shimmerController = AnimationController(
+      duration: const Duration(milliseconds: 3000),
+      vsync: this,
+    )..repeat();
     _startCountdown();
   }
+
+
 
   @override
   void dispose() {
@@ -36,6 +48,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
     for (var node in _focusNodes) {
       node.dispose();
     }
+    _shimmerController.dispose();
     super.dispose();
   }
 
@@ -65,7 +78,11 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
       await Future.delayed(const Duration(seconds: 2));
       
       if (mounted) {
-        context.go('/success');
+        if (widget.source == 'signup') {
+          context.go('/success');
+        } else {
+          context.go('/home');
+        }
       }
     } catch (e) {
       print('خطأ في التحقق من OTP: $e');
@@ -120,9 +137,9 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
       SnackBar(
         content: Text(
           message,
-          style: GoogleFonts.cairo(color: Colors.white),
+          style: GoogleFonts.tajawal(color: Colors.white),
         ),
-        backgroundColor: isError ? AppColors.error : AppColors.success,
+        backgroundColor: isError ? Theme.of(context).colorScheme.error : Colors.green,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -130,195 +147,278 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 400),
-                padding: const EdgeInsets.all(32),
-                decoration: BoxDecoration(
-                  gradient: AppColors.cardGradient,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.whiteTransparent20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 20,
-                      spreadRadius: 5,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // زر العودة
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: IconButton(
-                        onPressed: () => context.pop(),
-                        icon: const Icon(
-                          Icons.arrow_forward,
-                          color: AppColors.textSecondary,
-                        ),
+    return BackButtonHandler(
+      fallbackRoute: widget.source == 'signup' ? '/signup' : '/login',
+      child: Scaffold(
+        body: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).colorScheme.surface,
+                Theme.of(context).colorScheme.surface,
+                Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+              ],
+            ),
+          ),
+          child: Stack(
+            children: [
+              // Shimmer Background Effect
+              AnimatedBuilder(
+                animation: _shimmerController,
+                builder: (context, child) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment(-1.0 + 2.0 * _shimmerController.value, -1.0),
+                        end: Alignment(1.0 + 2.0 * _shimmerController.value, 1.0),
+                        colors: [
+                          Colors.transparent,
+                          Theme.of(context).colorScheme.primary.withValues(alpha: 0.03),
+                          Theme.of(context).colorScheme.secondary.withValues(alpha: 0.02),
+                          Colors.transparent,
+                        ],
                       ),
                     ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // أيقونة الحماية
-                    Container(
-                      width: 80,
-                      height: 80,
-                      margin: const EdgeInsets.only(bottom: 24),
+                  );
+                },
+              ),
+              SafeArea(
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Container(
+                      constraints: const BoxConstraints(maxWidth: 400),
+                      padding: const EdgeInsets.all(32),
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [Colors.blue.shade400, Colors.blue.shade600],
+                        color: Theme.of(context).brightness == Brightness.dark 
+                            ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.9)
+                            : Colors.white.withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(32),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                          width: 2,
                         ),
-                      ),
-                      child: const Icon(
-                        Icons.security,
-                        size: 40,
-                        color: Colors.white,
-                      ),
-                    ),
-                    
-                    // العنوان
-                    Text(
-                      'رمز التحقق',
-                      style: GoogleFonts.cairo(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    
-                    const SizedBox(height: 8),
-                    
-                    Text(
-                      'أدخل الرمز المرسل إلى\n${widget.phoneNumber}',
-                      style: GoogleFonts.cairo(
-                        fontSize: 16,
-                        color: AppColors.textSecondary,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    
-                    const SizedBox(height: 32),
-                    
-                    // حقول OTP
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: List.generate(6, (index) {
-                        return Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            gradient: AppColors.cardGradient,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.whiteTransparent20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                            blurRadius: 30,
+                            spreadRadius: 10,
                           ),
-                          child: TextFormField(
-                            controller: _otpControllers[index],
-                            focusNode: _focusNodes[index],
-                            keyboardType: TextInputType.number,
-                            textAlign: TextAlign.center,
-                            maxLength: 1,
-                            style: GoogleFonts.cairo(
-                              color: AppColors.textPrimary,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              counterText: '',
-                            ),
-                            onChanged: (value) => _onOtpChanged(index, value),
-                          ),
-                        );
-                      }),
-                    ),
-                    
-                    const SizedBox(height: 32),
-                    
-                    // زر التحقق
-                    Container(
-                      height: 56,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.blue.shade600, Colors.blue.shade700],
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _verifyOTP,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: _isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
-                            : Text(
-                                'تأكيد الرمز',
-                                style: GoogleFonts.cairo(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // إعادة الإرسال
-                    if (_remainingSeconds > 0)
-                      Text(
-                        'لم تستلم الرمز؟ يمكنك إعادة الإرسال خلال $_remainingSeconds ثانية',
-                        style: GoogleFonts.cairo(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                        ),
-                        textAlign: TextAlign.center,
-                      )
-                    else
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'لم تستلم الرمز؟ ',
-                            style: GoogleFonts.cairo(
-                              fontSize: 14,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: _resendOTP,
-                            child: Text(
-                              'إعادة الإرسال',
-                              style: GoogleFonts.cairo(
-                                fontSize: 14,
-                                color: Colors.blue.shade600,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
                           ),
                         ],
                       ),
-                  ],
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // أيقونة الحماية
+                          Container(
+                            width: 100,
+                            height: 100,
+                            margin: const EdgeInsets.only(bottom: 32),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Theme.of(context).colorScheme.primary,
+                                  Theme.of(context).colorScheme.secondary,
+                                ],
+                              ),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                                  blurRadius: 20,
+                                  spreadRadius: 5,
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.security,
+                              size: 48,
+                              color: Colors.white,
+                            ),
+                          ),
+                          
+                          // العنوان
+                          Text(
+                            'رمز التحقق',
+                            style: GoogleFonts.tajawal(
+                              fontSize: 32,
+                              fontWeight: FontWeight.w900,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          
+                          const SizedBox(height: 8),
+                          
+                          Text(
+                            'أدخل الرمز المرسل إلى\n${widget.phoneNumber}',
+                            style: GoogleFonts.tajawal(
+                              fontSize: 16,
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          
+                          const SizedBox(height: 32),
+                          
+                          // حقول OTP
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: List.generate(6, (index) {
+                              return Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      Theme.of(context).colorScheme.surface,
+                                      Theme.of(context).colorScheme.primary.withValues(alpha: 0.02),
+                                      Theme.of(context).colorScheme.surface,
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
+                                    width: 2,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                                      blurRadius: 10,
+                                      spreadRadius: 1,
+                                    ),
+                                  ],
+                                ),
+                                child: TextFormField(
+                                  controller: _otpControllers[index],
+                                  focusNode: _focusNodes[index],
+                                  keyboardType: TextInputType.number,
+                                  textAlign: TextAlign.center,
+                                  maxLength: 1,
+                                  style: GoogleFonts.tajawal(
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  decoration: const InputDecoration(
+                                    border: InputBorder.none,
+                                    counterText: '',
+                                  ),
+                                  onChanged: (value) => _onOtpChanged(index, value),
+                                ),
+                              );
+                            }),
+                          ),
+                          
+                          const SizedBox(height: 32),
+                          
+                          // زر التحقق
+                          Container(
+                            height: 58,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Theme.of(context).colorScheme.primary,
+                                  Theme.of(context).colorScheme.secondary,
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                                  blurRadius: 20,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _verifyOTP,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text(
+                                      'تأكيد الرمز',
+                                      style: GoogleFonts.tajawal(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          
+                          const SizedBox(height: 24),
+                          
+                          // إعادة الإرسال
+                          if (_remainingSeconds > 0)
+                            Text(
+                              'لم تستلم الرمز؟ يمكنك إعادة الإرسال خلال $_remainingSeconds ثانية',
+                              style: GoogleFonts.tajawal(
+                                fontSize: 14,
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                              ),
+                              textAlign: TextAlign.center,
+                            )
+                          else
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'لم تستلم الرمز؟ ',
+                                  style: GoogleFonts.tajawal(
+                                    fontSize: 14,
+                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: _resendOTP,
+                                  child: Text(
+                                    'إعادة الإرسال',
+                                    style: GoogleFonts.tajawal(
+                                      fontSize: 14,
+                                      color: Theme.of(context).colorScheme.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
         ),
       ),
