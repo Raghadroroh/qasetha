@@ -13,7 +13,8 @@ class LanguageSettingsScreen extends StatefulWidget {
   State<LanguageSettingsScreen> createState() => _LanguageSettingsScreenState();
 }
 
-class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with TickerProviderStateMixin {
+class _LanguageSettingsScreenState extends State<LanguageSettingsScreen>
+    with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
@@ -27,10 +28,7 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeIn,
-    ));
+    ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeIn));
     _fadeController.forward();
   }
 
@@ -45,7 +43,7 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         final isRTL = themeService.languageCode == 'ar';
-        
+
         return Scaffold(
           body: Container(
             width: double.infinity,
@@ -56,18 +54,22 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        Theme.of(context).colorScheme.background,
                         Theme.of(context).colorScheme.surface,
-                        Theme.of(context).colorScheme.primary.withOpacity(0.05),
+                        Theme.of(context).colorScheme.surface,
+                        Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.05),
                       ],
                     )
                   : LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        Theme.of(context).colorScheme.background,
                         Theme.of(context).colorScheme.surface,
-                        Theme.of(context).colorScheme.primary.withOpacity(0.05),
+                        Theme.of(context).colorScheme.surface,
+                        Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.05),
                       ],
                     ),
             ),
@@ -78,9 +80,7 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
                   top: 16,
                   right: isRTL ? 16 : null,
                   left: isRTL ? null : 16,
-                  child: SafeArea(
-                    child: const AppControls(),
-                  ),
+                  child: const SafeArea(child: AppControls()),
                 ),
                 // Back Button
                 Positioned(
@@ -94,7 +94,9 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
                         isRTL ? Icons.arrow_forward : Icons.arrow_back,
                       ),
                       style: IconButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.surface.withValues(alpha: 0.8),
                         foregroundColor: Theme.of(context).colorScheme.primary,
                       ),
                     ),
@@ -127,7 +129,10 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary
+                                          .withValues(alpha: 0.3),
                                       blurRadius: 15,
                                       spreadRadius: 3,
                                     ),
@@ -139,33 +144,43 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
                                   size: 40,
                                 ),
                               ),
-                              
+
                               Text(
                                 context.l10n.language,
                                 style: GoogleFonts.tajawal(
                                   fontSize: 28,
                                   fontWeight: FontWeight.w900,
-                                  color: Theme.of(context).colorScheme.onSurface,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                 ),
                                 textAlign: TextAlign.center,
-                                textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
+                                textDirection: isRTL
+                                    ? TextDirection.rtl
+                                    : TextDirection.ltr,
                               ),
-                              
+
                               const SizedBox(height: 40),
-                              
+
                               // خيارات اللغة
                               Container(
                                 padding: const EdgeInsets.all(24),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surface.withOpacity(0.9),
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.surface.withValues(alpha: 0.9),
                                   borderRadius: BorderRadius.circular(24),
                                   border: Border.all(
-                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                    color: Theme.of(context).colorScheme.primary
+                                        .withValues(alpha: 0.1),
                                     width: 2,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary
+                                          .withValues(alpha: 0.08),
                                       blurRadius: 30,
                                       spreadRadius: 10,
                                     ),
@@ -181,9 +196,9 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
                                       'system',
                                       isRTL,
                                     ),
-                                    
+
                                     const SizedBox(height: 16),
-                                    
+
                                     _buildLanguageOption(
                                       context,
                                       themeService,
@@ -192,9 +207,9 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
                                       'ar',
                                       isRTL,
                                     ),
-                                    
+
                                     const SizedBox(height: 16),
-                                    
+
                                     _buildLanguageOption(
                                       context,
                                       themeService,
@@ -230,21 +245,25 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
     bool isRTL,
   ) {
     final isSelected = themeService.languageCode == languageCode;
-    
+
     return Container(
       decoration: BoxDecoration(
-        gradient: isSelected ? LinearGradient(
-          colors: [
-            Theme.of(context).colorScheme.primary.withOpacity(0.1),
-            Theme.of(context).colorScheme.secondary.withOpacity(0.1),
-          ],
-        ) : null,
+        gradient: isSelected
+            ? LinearGradient(
+                colors: [
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                  Theme.of(
+                    context,
+                  ).colorScheme.secondary.withValues(alpha: 0.1),
+                ],
+              )
+            : null,
         color: isSelected ? null : Colors.transparent,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isSelected 
+          color: isSelected
               ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).colorScheme.primary.withOpacity(0.2),
+              : Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
           width: isSelected ? 2 : 1,
         ),
       ),
@@ -257,7 +276,9 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    isRTL ? 'تم تغيير اللغة بنجاح' : 'Language changed successfully',
+                    isRTL
+                        ? 'تم تغيير اللغة بنجاح'
+                        : 'Language changed successfully',
                     style: GoogleFonts.tajawal(color: Colors.white),
                   ),
                   backgroundColor: Colors.green,
@@ -273,22 +294,23 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
             child: Row(
               textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
               children: [
-                Text(
-                  flag,
-                  style: const TextStyle(fontSize: 24),
-                ),
+                Text(flag, style: const TextStyle(fontSize: 24)),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
                     title,
                     style: GoogleFonts.tajawal(
                       fontSize: 18,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                      color: isSelected 
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w600,
+                      color: isSelected
                           ? Theme.of(context).colorScheme.primary
                           : Theme.of(context).colorScheme.onSurface,
                     ),
-                    textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
+                    textDirection: isRTL
+                        ? TextDirection.rtl
+                        : TextDirection.ltr,
                   ),
                 ),
                 if (isSelected)

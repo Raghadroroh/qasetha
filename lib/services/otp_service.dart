@@ -1,5 +1,4 @@
 import 'dart:math';
-// import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../constants/app_strings.dart';
 import '../services/logger_service.dart';
@@ -9,24 +8,22 @@ class OTPService {
   factory OTPService() => _instance;
   OTPService._internal();
 
-  // final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   String? _verificationId;
   int? _resendToken;
 
-  static const String _otpAttemptsKey = 'otp_attempts';
-  static const String _otpCodeKey = 'otp_code';
-  static const String _otpTimestampKey = 'otp_timestamp';
-  static const int _otpValidityMinutes = 5;
-  static const int _maxOtpAttempts = 3;
+  // Constants for future use when storage is implemented
+  // static const String _otpAttemptsKey = 'otp_attempts';
+  // static const String _otpCodeKey = 'otp_code';
+  // static const String _otpTimestampKey = 'otp_timestamp';
+  // static const int _otpValidityMinutes = 5;
+  // static const int _maxOtpAttempts = 3;
 
   Future<void> sendPhoneOTP(String phoneNumber) async {
     try {
       await _auth.verifyPhoneNumber(
         phoneNumber: phoneNumber,
-        verificationCompleted: (PhoneAuthCredential credential) {
-          // التحقق التلقائي أو الفوري
-        },
+        verificationCompleted: (PhoneAuthCredential credential) {},
         verificationFailed: (FirebaseAuthException e) {
           throw Exception(_handleAuthException(e));
         },
@@ -39,12 +36,14 @@ class OTPService {
         },
         forceResendingToken: _resendToken,
       );
+
+      LoggerService.info('OTP sent to $phoneNumber');
     } catch (e) {
       throw Exception(AppStrings.smsError);
     }
   }
 
-  Future<UserCredential> verifyOTP(String smsCode) async {
+  Future<dynamic> verifyOTP(String smsCode) async {
     if (_verificationId == null) {
       throw Exception(AppStrings.verificationIdMissing);
     }
@@ -60,8 +59,6 @@ class OTPService {
   Future<OTPResult> sendEmailOTP(String email) async {
     try {
       final otpCode = _generateOTP();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-
       await _sendEmailViaFirebase(email, otpCode);
       return OTPResult.success;
     } catch (e) {
@@ -74,8 +71,6 @@ class OTPService {
     try {
       final formattedPhone = _formatPhoneNumber(phoneNumber);
       final otpCode = _generateOTP();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-
       await _sendSMSViaFirebase(formattedPhone, otpCode);
       return OTPResult.success;
     } catch (e) {
@@ -86,33 +81,39 @@ class OTPService {
 
   Future<OTPResult> verifyOTPCode(String inputCode) async {
     try {
-      final attempts = 0;
-
-      if (attempts >= _maxOtpAttempts) {
-        return OTPResult.tooManyAttempts;
-      }
-
-      final savedCode = inputCode;
-      final timestampStr = DateTime.now().millisecondsSinceEpoch.toString();
-
-      if (savedCode.isEmpty || timestampStr.isEmpty) {
-        return OTPResult.expired;
-      }
-
-      final timestamp = int.parse(timestampStr);
-      final now = DateTime.now().millisecondsSinceEpoch;
-      final diffMinutes = (now - timestamp) / (1000 * 60);
-
-      if (diffMinutes > _otpValidityMinutes) {
-        await _clearOTPData();
-        return OTPResult.expired;
-      }
-
-      if (inputCode.trim() == savedCode) {
-        await _clearOTPData();
-        return OTPResult.success;
-      } else {
+      // Validate OTP format
+      if (inputCode.length != 6) {
         return OTPResult.invalid;
+      }
+
+      if (!RegExp(r'^\d{6}$').hasMatch(inputCode)) {
+        return OTPResult.invalid;
+      }
+
+      // Use Firebase phone auth verification
+      if (_verificationId == null) {
+        LoggerService.error('Verification ID is null');
+        return OTPResult.error;
+      }
+
+      final credential = PhoneAuthProvider.credential(
+        verificationId: _verificationId!,
+        smsCode: inputCode,
+      );
+
+      await _auth.signInWithCredential(credential);
+      return OTPResult.success;
+    } on FirebaseAuthException catch (e) {
+      await _logError('verifyOTP', e);
+      switch (e.code) {
+        case 'invalid-verification-code':
+          return OTPResult.invalid;
+        case 'session-expired':
+          return OTPResult.expired;
+        case 'too-many-requests':
+          return OTPResult.tooManyAttempts;
+        default:
+          return OTPResult.error;
       }
     } catch (e) {
       await _logError('verifyOTP', e);
@@ -126,10 +127,6 @@ class OTPService {
 
   Future<int> getRemainingSeconds() async {
     return 300; // 5 minutes
-  }
-
-  Future<void> _clearOTPData() async {
-    // Placeholder
   }
 
   String _generateOTP() {
@@ -153,39 +150,33 @@ class OTPService {
 
   Future<void> _sendEmailViaFirebase(String email, String otpCode) async {
     await Future.delayed(const Duration(seconds: 1));
-    LoggerService.info('OTP Code sent to $email: $otpCode');
+    LoggerService.info('OTP Code sent to $email: $otpCode (محاكاة)');
   }
 
   Future<void> _sendSMSViaFirebase(String phone, String otpCode) async {
     await Future.delayed(const Duration(seconds: 1));
-    LoggerService.info('OTP Code sent to $phone: $otpCode');
+    LoggerService.info('OTP Code sent to $phone: $otpCode (محاكاة)');
   }
 
   Future<void> _logError(String method, dynamic error) async {
-    // TODO: سيتم إضافة Crashlytics logging بعد التهيئة
+    LoggerService.error('OTP Service Error in $method: $error');
   }
 
   String _handleAuthException(FirebaseAuthException e) {
     switch (e.code) {
       case 'invalid-phone-number':
-        return AppStrings.invalidPhoneNumber;
+        return 'رقم الهاتف غير صحيح';
       case 'too-many-requests':
-        return AppStrings.tooManyRequests;
-      case 'invalid-verification-code':
-        return AppStrings.invalidCode;
+        return 'تم تجاوز عدد المحاولات المسموح';
+      case 'quota-exceeded':
+        return 'تم تجاوز الحد المسموح من الرسائل';
       default:
         return AppStrings.generalError;
     }
   }
 }
 
-enum OTPResult {
-  success,
-  invalid,
-  expired,
-  tooManyAttempts,
-  error,
-}
+enum OTPResult { success, invalid, expired, tooManyAttempts, error }
 
 extension OTPResultExtension on OTPResult {
   String get message {

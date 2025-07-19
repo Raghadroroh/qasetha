@@ -1,19 +1,24 @@
 import 'package:local_auth/local_auth.dart';
+// TODO: Uncomment after running flutter pub get
 // import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-// TODO: سيتم إضافة Firebase imports بعد التهيئة
+// import 'package:firebase_analytics/firebase_analytics.dart';
+// import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import '../constants/app_strings.dart';
 
 class BiometricAuthService {
-  static final BiometricAuthService _instance = BiometricAuthService._internal();
+  static final BiometricAuthService _instance =
+      BiometricAuthService._internal();
   factory BiometricAuthService() => _instance;
   BiometricAuthService._internal();
 
   final LocalAuthentication _localAuth = LocalAuthentication();
+  // TODO: Uncomment after adding dependencies
   // final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
-  // TODO: سيتم إضافة Firebase Analytics instance بعد التهيئة
+  // final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
-  static const String _biometricEnabledKey = 'biometric_enabled';
-  static const String _biometricTypeKey = 'biometric_type';
+  // Keys for future use when secure storage is added
+  // static const String _biometricEnabledKey = 'biometric_enabled';
+  // static const String _biometricTypeKey = 'biometric_type';
 
   Future<bool> isDeviceSupported() async {
     try {
@@ -78,9 +83,10 @@ class BiometricAuthService {
 
   Future<bool> isBiometricEnabled() async {
     try {
+      // TODO: Uncomment after adding flutter_secure_storage
       // final enabled = await _secureStorage.read(key: _biometricEnabledKey);
-      final enabled = 'false';
-      return enabled == 'true';
+      // return enabled == 'true';
+      return false; // Temporary
     } catch (e) {
       await _logError('isBiometricEnabled', e);
       return false;
@@ -100,12 +106,13 @@ class BiometricAuthService {
       );
 
       if (authResult == BiometricAuthResult.success) {
+        // TODO: Uncomment after adding dependencies
         // await _secureStorage.write(key: _biometricEnabledKey, value: 'true');
         // final preferredType = await getPreferredBiometricType();
         // if (preferredType != null) {
         //   await _secureStorage.write(key: _biometricTypeKey, value: preferredType.name);
         // }
-        // TODO: سيتم إضافة Analytics logging بعد التهيئة
+        // await _analytics.logEvent(name: 'biometric_enabled');
         return BiometricAuthResult.success;
       }
       return authResult;
@@ -117,9 +124,10 @@ class BiometricAuthService {
 
   Future<void> disableBiometric() async {
     try {
+      // TODO: Uncomment after adding dependencies
       // await _secureStorage.delete(key: _biometricEnabledKey);
       // await _secureStorage.delete(key: _biometricTypeKey);
-      // TODO: سيتم إضافة Analytics logging بعد التهيئة
+      // await _analytics.logEvent(name: 'biometric_disabled');
     } catch (e) {
       await _logError('disableBiometric', e);
     }
@@ -144,18 +152,22 @@ class BiometricAuthService {
       );
 
       if (didAuthenticate) {
-        // TODO: سيتم إضافة Analytics logging بعد التهيئة
+        // TODO: Uncomment after adding dependencies
+        // await _analytics.logEvent(name: 'biometric_auth_success');
         return BiometricAuthResult.success;
       } else {
-        // TODO: سيتم إضافة Analytics logging بعد التهيئة
+        // TODO: Uncomment after adding dependencies
+        // await _analytics.logEvent(name: 'biometric_auth_cancelled');
         return BiometricAuthResult.cancelled;
       }
     } catch (e) {
       await _logError('authenticateUser', e);
       final errorString = e.toString().toLowerCase();
-      if (errorString.contains('not available') || errorString.contains('not enrolled')) {
+      if (errorString.contains('not available') ||
+          errorString.contains('not enrolled')) {
         return BiometricAuthResult.notSetup;
-      } else if (errorString.contains('cancelled') || errorString.contains('user_cancel')) {
+      } else if (errorString.contains('cancelled') ||
+          errorString.contains('user_cancel')) {
         return BiometricAuthResult.cancelled;
       } else {
         return BiometricAuthResult.error;
@@ -168,12 +180,26 @@ class BiometricAuthService {
   }) async {
     final reason = '${AppStrings.verifyForTransaction}\n$transactionType';
     final result = await authenticateUser(reason: reason);
-    // TODO: سيتم إضافة Analytics logging بعد التهيئة
+    // TODO: Uncomment after adding dependencies
+    // await _analytics.logEvent(
+    //   name: 'biometric_transaction_auth',
+    //   parameters: {
+    //     'transaction_type': transactionType,
+    //     'result': result.name,
+    //   },
+    // );
     return result;
   }
 
   Future<void> _logError(String method, dynamic error) async {
-    // TODO: سيتم إضافة Crashlytics logging بعد التهيئة
+    // TODO: Uncomment after adding firebase_crashlytics dependency
+    // await FirebaseCrashlytics.instance.recordError(
+    //   error,
+    //   null,
+    //   information: 'BiometricAuthService.$method',
+    // );
+    // Temporary logging - replace with proper logging
+    // print('BiometricAuthService.$method: $error');
   }
 }
 
@@ -205,5 +231,7 @@ extension BiometricAuthResultExtension on BiometricAuthResult {
   }
 
   bool get isSuccess => this == BiometricAuthResult.success;
-  bool get shouldShowFallback => this != BiometricAuthResult.success && this != BiometricAuthResult.cancelled;
+  bool get shouldShowFallback =>
+      this != BiometricAuthResult.success &&
+      this != BiometricAuthResult.cancelled;
 }

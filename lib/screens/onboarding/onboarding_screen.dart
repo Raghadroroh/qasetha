@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -15,7 +14,8 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> with TickerProviderStateMixin {
+class _OnboardingScreenState extends State<OnboardingScreen>
+    with TickerProviderStateMixin {
   final PageController _pageController = PageController();
   int _currentPage = 0;
   late AnimationController _fadeController;
@@ -112,7 +112,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Theme.of(context).colorScheme.background,
+                      Theme.of(context).colorScheme.surface,
                       Theme.of(context).colorScheme.surface,
                     ],
                   )
@@ -120,7 +120,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Theme.of(context).colorScheme.background,
+                      Theme.of(context).colorScheme.surface,
                       Theme.of(context).colorScheme.surface,
                     ],
                   ),
@@ -129,11 +129,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
             child: Stack(
               children: [
                 // App Controls
-                Positioned(
-                  top: 16,
-                  right: 16,
-                  child: const AppControls(),
-                ),
+                const Positioned(top: 16, right: 16, child: AppControls()),
                 Column(
                   children: [
                     _buildHeader(),
@@ -180,9 +176,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                 height: 4,
                 width: index == _currentPage ? 48 : 24,
                 decoration: BoxDecoration(
-                  color: index <= _currentPage 
+                  color: index <= _currentPage
                       ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                      : Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               );
@@ -192,16 +190,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface.withOpacity(0.5),
+              color: Theme.of(
+                context,
+              ).colorScheme.surface.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
+              border: Border.all(
+                color: Theme.of(
+                  context,
+                ).colorScheme.outline.withValues(alpha: 0.3),
+              ),
             ),
             child: TextButton(
               onPressed: _skipToLogin,
               child: Text(
                 context.l10n.skip,
                 style: GoogleFonts.tajawal(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
@@ -236,27 +242,35 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                       end: Alignment.bottomRight,
                       colors: [
                         Theme.of(context).colorScheme.surface,
-                        Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.1),
                         Theme.of(context).colorScheme.surface,
                       ],
                     ),
                     border: Border.all(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.6),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.6),
                       width: 3,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.5),
                         blurRadius: 40,
                         spreadRadius: 8,
                       ),
                       BoxShadow(
-                        color: Theme.of(context).colorScheme.secondary.withOpacity(0.3),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.secondary.withValues(alpha: 0.3),
                         blurRadius: 60,
                         spreadRadius: 12,
                       ),
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -270,11 +284,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(28),
                             gradient: LinearGradient(
-                              begin: Alignment(-1.0 + 2.0 * _shimmerController.value, 0.0),
-                              end: Alignment(1.0 + 2.0 * _shimmerController.value, 0.0),
+                              begin: Alignment(
+                                -1.0 + 2.0 * _shimmerController.value,
+                                0.0,
+                              ),
+                              end: Alignment(
+                                1.0 + 2.0 * _shimmerController.value,
+                                0.0,
+                              ),
                               colors: [
                                 Colors.transparent,
-                                Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                Theme.of(
+                                  context,
+                                ).colorScheme.primary.withValues(alpha: 0.1),
                                 Colors.transparent,
                               ],
                             ),
@@ -283,7 +305,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                       ),
                       // Content
                       Center(
-                        child: Container(
+                        child: SizedBox(
                           width: 220,
                           height: 220,
                           child: Lottie.asset(
@@ -306,7 +328,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
             style: GoogleFonts.tajawal(
               fontSize: 24,
               fontWeight: FontWeight.w900,
-              color: Theme.of(context).colorScheme.onBackground,
+              color: Theme.of(context).colorScheme.onSurface,
               height: 1.2,
             ),
             textAlign: TextAlign.center,
@@ -316,7 +338,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
             data.subtitle,
             style: GoogleFonts.tajawal(
               fontSize: 14,
-              color: Theme.of(context).colorScheme.onBackground.withOpacity(0.8),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.8),
               height: 1.6,
             ),
             textAlign: TextAlign.center,
@@ -351,7 +375,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
           Text(
             '© qasetha',
             style: GoogleFonts.tajawal(
-              color: Theme.of(context).colorScheme.onBackground.withOpacity(0.4),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.4),
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
@@ -370,30 +396,42 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3), width: 1),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+            width: 1,
+          ),
         ),
-        child: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface, size: 24),
+        child: Icon(
+          Icons.chevron_right,
+          color: Theme.of(context).colorScheme.onSurface,
+          size: 24,
+        ),
       ),
     );
   }
 
   Widget _buildNextButton() {
-    final buttonText = _currentPage == _pages.length - 1 
+    final buttonText = _currentPage == _pages.length - 1
         ? context.l10n.getStarted
         : context.l10n.next;
-    
+
     return GestureDetector(
       onTap: _nextPage,
       child: Container(
         height: 56,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary],
+            colors: [
+              Theme.of(context).colorScheme.primary,
+              Theme.of(context).colorScheme.secondary,
+            ],
           ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.4),
               blurRadius: 15,
               spreadRadius: 1,
             ),
@@ -456,7 +494,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
           width: 1,
         ),
       ),

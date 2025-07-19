@@ -75,11 +75,12 @@ class TransactionExample extends StatelessWidget {
   const TransactionExample({super.key});
 
   Future<void> _handleSendMoney(BuildContext context) async {
-    final isAuthenticated = await TransactionSecurityHelper.authenticateForSendMoney(
-      context: context,
-      amount: '100 دينار',
-      recipient: 'أحمد محمد',
-    );
+    final isAuthenticated =
+        await TransactionSecurityHelper.authenticateForSendMoney(
+          context: context,
+          amount: '100 دينار',
+          recipient: 'أحمد محمد',
+        );
 
     if (isAuthenticated) {
       _processSendMoney();

@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter pub:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(flutter build:*)",
+      "Bash(dart format:*)",
+      "Bash(flutter clean:*)",
+      "Bash(flutterfire configure:*)",
+      "Bash(dart pub global activate:*)",
+      "Bash(dart pub global run flutterfire_cli:flutterfire configure:*)",
+      "Bash(rm:*)",
+      "Bash(find:*)",
+      "Bash(dart analyze:*)",
+      "Bash(rg:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(firebase projects:list:*)",
+      "Bash(npm run deploy:*)",
+      "Bash(firebase functions:list:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(cmd /c \"firebase deploy --only functions\")",
+      "Bash(\"/c/Users/ragha/AppData/Roaming/npm/firebase\" deploy --only functions)",
+      "Bash(node:*)",
+      "Bash(firebase emulators:start:*)",
+      "Bash(grep:*)",
+      "Bash(flutter:*)",
+      "Bash(ls:*)"
+    ],
+    "deny": []
+  }
+}

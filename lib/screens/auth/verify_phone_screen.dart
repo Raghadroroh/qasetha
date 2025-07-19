@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:go_router/go_router.dart';
 import '../../services/otp_service.dart';
 import '../../constants/app_strings.dart';
 import '../../constants/app_colors.dart';
 
 class VerifyPhoneScreen extends StatefulWidget {
   final String phoneNumber;
-  const VerifyPhoneScreen({Key? key, required this.phoneNumber}) : super(key: key);
+  const VerifyPhoneScreen({super.key, required this.phoneNumber});
 
   @override
   _VerifyPhoneScreenState createState() => _VerifyPhoneScreenState();
@@ -16,7 +16,7 @@ class VerifyPhoneScreen extends StatefulWidget {
 class _VerifyPhoneScreenState extends State<VerifyPhoneScreen> {
   final _otpController = TextEditingController();
   final _otpService = OTPService();
-  
+
   bool _isLoading = false;
   int _remainingSeconds = 60;
   Timer? _timer;
@@ -49,7 +49,7 @@ class _VerifyPhoneScreenState extends State<VerifyPhoneScreen> {
   void _startCountdown() {
     _timer?.cancel();
     setState(() => _remainingSeconds = 60);
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_remainingSeconds > 0) {
         setState(() => _remainingSeconds--);
       } else {
@@ -68,8 +68,9 @@ class _VerifyPhoneScreenState extends State<VerifyPhoneScreen> {
     try {
       await _otpService.verifyOTP(_otpController.text.trim());
       _showSnackBar(AppStrings.phoneNumberVerified);
-      // انتقل إلى الشاشة التالية أو أكمل التسجيل
-      Navigator.of(context).pushReplacementNamed('/home');
+      if (mounted) {
+        context.go('/dashboard');
+      }
     } catch (e) {
       _showSnackBar(e.toString(), isError: true);
     } finally {
@@ -79,7 +80,7 @@ class _VerifyPhoneScreenState extends State<VerifyPhoneScreen> {
 
   Future<void> _resendOTP() async {
     if (_remainingSeconds > 0) return;
-    
+
     setState(() => _isLoading = true);
     try {
       await _otpService.sendPhoneOTP(widget.phoneNumber);
@@ -104,33 +105,33 @@ class _VerifyPhoneScreenState extends State<VerifyPhoneScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(AppStrings.verifyPhoneNumber)),
+      appBar: AppBar(title: const Text(AppStrings.verifyPhoneNumber)),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(AppStrings.enterOtpCode),
+            const Text(AppStrings.enterOtpCode),
             TextField(
               controller: _otpController,
               keyboardType: TextInputType.number,
               maxLength: 6,
-              decoration: InputDecoration(
-                hintText: AppStrings.otpCodeHint,
-              ),
+              decoration: const InputDecoration(hintText: AppStrings.otpCodeHint),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _isLoading ? null : _verifyOTP,
-              child: Text(AppStrings.verifyCode),
+              child: const Text(AppStrings.verifyCode),
             ),
-            SizedBox(height: 20),
-            Text(_remainingSeconds > 0
-                ? '${AppStrings.resendInSeconds} $_remainingSeconds ${AppStrings.secondsUnit}'
-                : AppStrings.noCodeReceived),
+            const SizedBox(height: 20),
+            Text(
+              _remainingSeconds > 0
+                  ? '${AppStrings.resendInSeconds} $_remainingSeconds ${AppStrings.secondsUnit}'
+                  : AppStrings.noCodeReceived,
+            ),
             TextButton(
               onPressed: _remainingSeconds > 0 ? null : _resendOTP,
-              child: Text(AppStrings.resendCode),
+              child: const Text(AppStrings.resendCode),
             ),
           ],
         ),

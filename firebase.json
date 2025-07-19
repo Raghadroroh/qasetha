@@ -3,34 +3,42 @@
     "platforms": {
       "android": {
         "default": {
-          "projectId": "qasetha-7cd4a",
-          "appId": "1:609901420481:android:fad079b7afbedfe5109940",
+          "projectId": "qasetha-app",
+          "appId": "1:249998545764:android:8d695cfddc94734c3ca071",
           "fileOutput": "android/app/google-services.json"
         }
       },
       "dart": {
         "lib/firebase_options.dart": {
-          "projectId": "qasetha-7cd4a",
+          "projectId": "qasetha-app",
           "configurations": {
-            "android": "1:609901420481:android:fad079b7afbedfe5109940",
-            "ios": "1:609901420481:ios:b5de827c71da1ce1109940"
+            "android": "1:249998545764:android:8d695cfddc94734c3ca071",
+            "ios": "1:249998545764:ios:b595e6efd4782dc13ca071"
           }
         }
       }
     }
   },
-  "hosting": {
-    "public": "public",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ]
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
+    }
+  ],
+  "firestore": {
+    "database": "(default)",
+    "location": "europe-west1",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "database": {
+    "rules": "database.rules.json"
   }
 }

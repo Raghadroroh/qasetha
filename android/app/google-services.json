@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "609901420481",
-    "project_id": "qasetha-7cd4a",
-    "storage_bucket": "qasetha-7cd4a.firebasestorage.app"
+    "project_number": "249998545764",
+    "project_id": "qasetha-app",
+    "storage_bucket": "qasetha-app.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:609901420481:android:fad079b7afbedfe5109940",
+        "mobilesdk_app_id": "1:249998545764:android:8d695cfddc94734c3ca071",
         "android_client_info": {
           "package_name": "com.qaseth.app.qasetha"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBK8wXGX4ztNNFhHJQkqldZMeaRIwj2b0M"
+          "current_key": "AIzaSyAa3v5_lSdNp2vWmLlEGPOuQY-kqkmM3VA"
         }
       ],
       "services": {

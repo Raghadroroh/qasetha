@@ -200,7 +200,7 @@ class _TransactionSecurityScreenState extends State<TransactionSecurityScreen> {
                   height: 120,
                   width: 120,
                   margin: const EdgeInsets.symmetric(vertical: 32),
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: AppColors.primaryGradient,
                   ),

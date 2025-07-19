@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_localizations.dart';
 import '../../widgets/app_controls.dart';
+import '../../widgets/logout_confirmation_dialog.dart';
+import '../../providers/auth_state_provider.dart';
+// No longer needed: import '../../widgets/back_button_widget.dart';
 
-class AppSettingsScreen extends StatelessWidget {
+class AppSettingsScreen extends ConsumerWidget {
   const AppSettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -37,20 +41,27 @@ class AppSettingsScreen extends StatelessWidget {
           child: Stack(
             children: [
               // أزرار التحكم
-              Positioned(top: 16, right: 16, child: const AppControls()),
+              const Positioned(top: 16, right: 16, child: AppControls()),
 
               // زر الرجوع
               Positioned(
                 top: 16,
                 left: 16,
                 child: IconButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    // التحقق من وجود صفحات سابقة في المكدس
+                    if (Navigator.of(context).canPop()) {
+                      context.pop();
+                    } else {
+                      // إذا لم توجد صفحات سابقة، انتقل إلى لوحة التحكم
+                      context.go('/dashboard');
+                    }
+                  },
                   icon: const Icon(Icons.arrow_back),
                   style: IconButton.styleFrom(
-                    backgroundColor:
-                        Theme.of(context).brightness == Brightness.dark
-                        ? Colors.black.withValues(alpha: 0.3)
-                        : Colors.white.withValues(alpha: 0.3),
+                    backgroundColor: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.black.withOpacity(0.3)
+                        : Colors.white.withOpacity(0.3),
                   ),
                 ),
               ),
@@ -96,26 +107,26 @@ class AppSettingsScreen extends StatelessWidget {
                                   Theme.of(context).brightness ==
                                       Brightness.dark
                                   ? [
-                                      Colors.white.withValues(alpha: 0.1),
-                                      Colors.white.withValues(alpha: 0.05),
+                                      Colors.white.withOpacity(0.1),
+                                      Colors.white.withOpacity(0.05),
                                     ]
                                   : [
-                                      Colors.white.withValues(alpha: 0.9),
-                                      Colors.white.withValues(alpha: 0.7),
+                                      Colors.white.withOpacity(0.9),
+                                      Colors.white.withOpacity(0.7),
                                     ],
                             ),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                               color: Theme.of(
                                 context,
-                              ).colorScheme.primary.withValues(alpha: 0.3),
+                              ).colorScheme.primary.withOpacity(0.3),
                               width: 1.5,
                             ),
                             boxShadow: [
                               BoxShadow(
                                 color: Theme.of(
                                   context,
-                                ).colorScheme.primary.withValues(alpha: 0.1),
+                                ).colorScheme.primary.withOpacity(0.1),
                                 blurRadius: 20,
                                 spreadRadius: 2,
                               ),
@@ -134,7 +145,7 @@ class AppSettingsScreen extends StatelessWidget {
                                       color: Theme.of(context)
                                           .colorScheme
                                           .primary
-                                          .withValues(alpha: 0.2),
+                                          .withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Icon(
@@ -184,26 +195,26 @@ class AppSettingsScreen extends StatelessWidget {
                                   Theme.of(context).brightness ==
                                       Brightness.dark
                                   ? [
-                                      Colors.white.withValues(alpha: 0.1),
-                                      Colors.white.withValues(alpha: 0.05),
+                                      Colors.white.withOpacity(0.1),
+                                      Colors.white.withOpacity(0.05),
                                     ]
                                   : [
-                                      Colors.white.withValues(alpha: 0.9),
-                                      Colors.white.withValues(alpha: 0.7),
+                                      Colors.white.withOpacity(0.9),
+                                      Colors.white.withOpacity(0.7),
                                     ],
                             ),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                               color: Theme.of(
                                 context,
-                              ).colorScheme.primary.withValues(alpha: 0.3),
+                              ).colorScheme.primary.withOpacity(0.3),
                               width: 1.5,
                             ),
                             boxShadow: [
                               BoxShadow(
                                 color: Theme.of(
                                   context,
-                                ).colorScheme.primary.withValues(alpha: 0.1),
+                                ).colorScheme.primary.withOpacity(0.1),
                                 blurRadius: 20,
                                 spreadRadius: 2,
                               ),
@@ -219,7 +230,7 @@ class AppSettingsScreen extends StatelessWidget {
                                       color: Theme.of(context)
                                           .colorScheme
                                           .primary
-                                          .withValues(alpha: 0.2),
+                                          .withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Icon(
@@ -256,6 +267,21 @@ class AppSettingsScreen extends StatelessWidget {
                             ],
                           ),
                         ),
+                        
+                        const SizedBox(height: 24),
+                        
+                        // زر تسجيل الخروج
+                        ElevatedButton.icon(
+                          onPressed: () => _handleLogout(context, ref),
+                          icon: const Icon(Icons.logout),
+                          label: const Text('تسجيل الخروج'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.redAccent,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -265,6 +291,30 @@ class AppSettingsScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+  
+  // معالجة تسجيل الخروج
+  void _handleLogout(BuildContext context, WidgetRef ref) async {
+    await LogoutConfirmationDialog.showWithCallbacks(
+      context,
+      onConfirm: () async {
+        final authNotifier = ref.read(authStateProvider.notifier);
+        final isGuest = ref.read(authStateProvider).isGuest;
+        
+        await authNotifier.signOut();
+        
+        if (context.mounted) {
+          // استخدام GoRouter للانتقال إلى صفحة تسجيل الدخول أو الصفحة الرئيسية
+          if (isGuest) {
+            // في وضع الضيف، نعود إلى صفحة اختيار اللغة
+            context.go('/language-selection');
+          } else {
+            // في وضع المستخدم العادي، نذهب إلى صفحة تسجيل الدخول
+            context.go('/login');
+          }
+        }
+      },
     );
   }
 }

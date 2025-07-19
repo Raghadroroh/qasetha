@@ -1,102 +1,117 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../utils/app_localizations.dart';
-import '../../services/firebase_auth_service.dart';
+import 'package:provider/provider.dart' as provider;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:math' as math;
+import '../../services/theme_service.dart';
 import '../../utils/validators.dart';
 import '../../widgets/app_controls.dart';
-import '../../widgets/back_button_handler.dart';
+// No longer needed: import '../../widgets/back_button_widget.dart';
 
-class LoginScreen extends StatefulWidget {
+import '../../providers/auth_state_provider.dart';
+
+class OceanColors {
+  // Light theme colors
+  static const Color lightBackground1 = Color(0xFFE8F4F8);
+  static const Color lightBackground2 = Color(0xFFB8D4D9);
+  static const Color lightAccent = Color(0xFF7FB3B3);
+  static const Color oceanBlue = Color(0xFF2E7D8A);
+  static const Color deepOcean = Color(0xFF1A4B52);
+
+  // Dark theme colors
+  static const Color darkBackground1 = Color(0xFF0A0E21);
+  static const Color darkBackground2 = Color(0xFF1A1B3A);
+  static const Color darkAccent = Color(0xFF2D1B69);
+  static const Color darkBlue = Color(0xFF0A192F);
+  static const Color neonCyan = Color(0xFF00E5FF);
+}
+
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
+class _LoginScreenState extends ConsumerState<LoginScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _authService = FirebaseAuthService();
-
+  bool _isEmailMode = true;
   bool _isLoading = false;
   bool _obscurePassword = true;
-  bool _isEmailMode = true;
 
-  late AnimationController _slideController;
-  late AnimationController _fadeController;
-  late AnimationController _shimmerController;
-  late Animation<Offset> _slideAnimation;
-  late Animation<double> _fadeAnimation;
+  late AnimationController _glowController;
+  late AnimationController _waveController;
+  late Animation<double> _glowAnimation;
+  late Animation<double> _waveAnimation;
 
   @override
   void initState() {
     super.initState();
-    _slideController = AnimationController(
-      duration: const Duration(milliseconds: 400),
+    _glowController = AnimationController(
+      duration: const Duration(seconds: 2),
       vsync: this,
-    );
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-    _shimmerController = AnimationController(
-      duration: const Duration(milliseconds: 3000),
+    )..repeat(reverse: true);
+
+    _waveController = AnimationController(
+      duration: const Duration(seconds: 3),
       vsync: this,
     )..repeat();
 
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _slideController,
-            curve: Curves.fastOutSlowIn,
-          ),
-        );
-    _fadeAnimation = Tween<double>(
+    _glowAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
+    );
+
+    _waveAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeIn));
-
-    _slideController.forward();
-    _fadeController.forward();
+    ).animate(CurvedAnimation(parent: _waveController, curve: Curves.linear));
   }
 
   @override
   void dispose() {
+    _glowController.dispose();
+    _waveController.dispose();
     _emailController.dispose();
-    _phoneController.dispose();
     _passwordController.dispose();
-    _slideController.dispose();
-    _fadeController.dispose();
-    _shimmerController.dispose();
     super.dispose();
   }
 
-  Future<void> _loginWithPassword() async {
+  Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
+
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      _showErrorSnackBar('جميع الحقول مطلوبة');
+      return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
-      final result = await _authService.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
+      final authNotifier = ref.read(authStateProvider.notifier);
+      final success = await authNotifier.signInWithEmail(
+        email: email,
+        password: password,
+        context: context,
       );
 
-      if (mounted) {
-        if (result.success) {
-          _showSnackBar(context.l10n.loginSuccess);
-          context.go('/home');
-        } else {
-          _showSnackBar(result.message, isError: true);
-        }
+      if (!mounted) return;
+
+      if (success) {
+        _showSuccessSnackBar('تم تسجيل الدخول بنجاح');
+        context.go('/dashboard');
+      } else {
+        final error = ref.read(authStateProvider).error;
+        _showErrorSnackBar(error ?? 'حدث خطأ في تسجيل الدخول');
       }
     } catch (e) {
       if (mounted) {
-        _showSnackBar('${context.l10n.loginError}: $e', isError: true);
+        _showErrorSnackBar('حدث خطأ غير متوقع');
       }
     } finally {
       if (mounted) {
@@ -105,32 +120,54 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  Future<void> _loginWithPhone() async {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _handleGuestLogin() async {
+    setState(() => _isLoading = true);
 
-    if (mounted) {
-      context.go(
-        '/otp-verify',
-        extra: {'phoneNumber': _phoneController.text.trim(), 'source': 'login'},
-      );
+    try {
+      final authNotifier = ref.read(authStateProvider.notifier);
+      final success = await authNotifier.signInAsGuest();
+
+      if (!mounted) return;
+
+      if (success) {
+        _showSuccessSnackBar('تم تسجيل الدخول كضيف بنجاح');
+        context.go('/dashboard');
+      } else {
+        final error = ref.read(authStateProvider).error;
+        _showErrorSnackBar(error ?? 'حدث خطأ في تسجيل الدخول كضيف');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackBar('حدث خطأ غير متوقع');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  void _showSnackBar(String message, {bool isError = false}) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).clearSnackBars();
+  void _showSuccessSnackBar(String message) {
+    final isDarkMode = provider.Provider.of<ThemeService>(context, listen: false).isDarkMode;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          message,
-          style: GoogleFonts.tajawal(color: Colors.white, fontSize: 14),
-        ),
-        backgroundColor: isError
-            ? Theme.of(context).colorScheme.error
-            : Colors.green,
+        content: Text(message),
+        backgroundColor: isDarkMode
+            ? OceanColors.neonCyan
+            : OceanColors.oceanBlue,
         behavior: SnackBarBehavior.floating,
-        showCloseIcon: false,
-        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -139,344 +176,538 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isRTL = context.isRTL;
+    return provider.Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        final isDarkMode = themeService.isDarkMode;
+        final isArabic = themeService.languageCode == 'ar';
 
-    return BackButtonHandler(
-      fallbackRoute: '/onboarding',
-      child: Scaffold(
-        body: Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Theme.of(context).colorScheme.surface,
-                Theme.of(context).colorScheme.surface,
-                Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
-              ],
+        return Scaffold(
+          body: AnimatedContainer(
+            duration: const Duration(milliseconds: 800),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDarkMode
+                    ? [
+                        OceanColors.darkBackground1,
+                        OceanColors.darkBackground2,
+                        OceanColors.darkAccent,
+                        OceanColors.darkBlue,
+                      ]
+                    : [
+                        OceanColors.lightBackground1,
+                        OceanColors.lightBackground2,
+                        OceanColors.lightAccent,
+                        OceanColors.oceanBlue,
+                      ],
+              ),
             ),
-          ),
-          child: Stack(
-            children: [
-              // Shimmer Background Effect
-              AnimatedBuilder(
-                animation: _shimmerController,
-                builder: (context, child) {
-                  return Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment(
-                          -1.0 + 2.0 * _shimmerController.value,
-                          -1.0,
-                        ),
-                        end: Alignment(
-                          1.0 + 2.0 * _shimmerController.value,
-                          1.0,
-                        ),
-                        colors: [
-                          Colors.transparent,
-                          Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.03),
-                          Theme.of(
-                            context,
-                          ).colorScheme.secondary.withValues(alpha: 0.02),
-                          Colors.transparent,
-                        ],
+            child: SafeArea(
+              child: Stack(
+                children: [
+                  // Animated Wave Background
+                  AnimatedBuilder(
+                    animation: _waveAnimation,
+                    builder: (context, child) {
+                      return CustomPaint(
+                        painter: WavePainter(_waveAnimation.value, isDarkMode),
+                        size: Size.infinite,
+                      );
+                    },
+                  ),
+
+                  // Back Button
+                  Positioned(
+                    top: 16,
+                    left: 16,
+                    child: IconButton(
+                      onPressed: () => context.pop(),
+                      icon: const Icon(Icons.arrow_back),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.black.withOpacity(0.3)
+                            : Colors.white.withOpacity(0.3),
                       ),
                     ),
-                  );
-                },
-              ),
-              // App Controls
-              Positioned(
-                top: 16,
-                right: isRTL ? 16 : null,
-                left: isRTL ? null : 16,
-                child: SafeArea(child: const AppControls()),
-              ),
-              // Content
-              SafeArea(
-                child: Center(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
-                    child: Container(
-                      constraints: const BoxConstraints(maxWidth: 420),
-                      child: Column(
-                        children: [
-                          // Logo
-                          Container(
-                            width: 100,
-                            height: 100,
-                            margin: const EdgeInsets.only(bottom: 32),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Theme.of(context).colorScheme.primary,
-                                  Theme.of(context).colorScheme.secondary,
-                                ],
-                              ),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.lock_outline,
-                              color: Colors.white,
-                              size: 48,
-                            ),
-                          ),
-                          // Form
-                          Container(
+                  ),
+                  
+                  // App Controls
+                  const Positioned(top: 16, right: 16, child: AppControls()),
+
+                  // Main Content
+                  Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
+                      child: AnimatedBuilder(
+                        animation: _glowAnimation,
+                        builder: (context, child) {
+                          return Container(
                             padding: const EdgeInsets.all(32),
                             decoration: BoxDecoration(
-                              color:
-                                  Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? Theme.of(
-                                      context,
-                                    ).colorScheme.surface.withValues(alpha: 0.9)
-                                  : Colors.white.withValues(alpha: 0.85),
-                              borderRadius: BorderRadius.circular(32),
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: isDarkMode
+                                    ? [
+                                        Colors.white.withValues(alpha: 0.1),
+                                        Colors.white.withValues(alpha: 0.05),
+                                      ]
+                                    : [
+                                        Colors.white.withValues(alpha: 0.3),
+                                        Colors.white.withValues(alpha: 0.1),
+                                      ],
+                              ),
+                              borderRadius: BorderRadius.circular(24),
                               border: Border.all(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.primary.withValues(alpha: 0.3),
+                                color: isDarkMode
+                                    ? OceanColors.neonCyan.withValues(alpha: 
+                                        0.3 * _glowAnimation.value,
+                                      )
+                                    : OceanColors.oceanBlue.withValues(alpha: 
+                                        0.3 * _glowAnimation.value,
+                                      ),
                                 width: 2,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.primary.withValues(alpha: 0.1),
+                                  color: isDarkMode
+                                      ? OceanColors.neonCyan.withValues(alpha: 
+                                          0.2 * _glowAnimation.value,
+                                        )
+                                      : OceanColors.oceanBlue.withValues(alpha: 
+                                          0.2 * _glowAnimation.value,
+                                        ),
                                   blurRadius: 30,
                                   spreadRadius: 10,
                                 ),
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.05),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 10),
+                                  color: Colors.white.withValues(alpha: 0.1),
+                                  blurRadius: 10,
+                                  spreadRadius: -5,
+                                  offset: const Offset(0, -10),
                                 ),
                               ],
                             ),
-                            child: Column(
-                              children: [
-                                Text(
-                                  context.l10n.welcome,
-                                  style: GoogleFonts.tajawal(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.w900,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface,
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // Logo with Glass Effect
+                                  _buildGlassLogo(isDarkMode),
+
+                                  const SizedBox(height: 32),
+
+                                  // Title
+                                  Text(
+                                    isArabic
+                                        ? 'أهلاً بك مرة أخرى'
+                                        : 'Welcome Back',
+                                    style: TextStyle(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDarkMode
+                                          ? Colors.white
+                                          : OceanColors.deepOcean,
+                                      shadows: [
+                                        Shadow(
+                                          color: isDarkMode
+                                              ? OceanColors.neonCyan
+                                              : OceanColors.oceanBlue,
+                                          blurRadius: 10,
+                                        ),
+                                      ],
+                                    ),
+                                    textAlign: TextAlign.center,
                                   ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 40),
-                                // Toggle Buttons
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.primary
-                                        .withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(16),
+
+                                  const SizedBox(height: 8),
+
+                                  Text(
+                                    isArabic
+                                        ? 'سجل دخولك للمتابعة'
+                                        : 'Sign in to continue',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: isDarkMode
+                                          ? Colors.white.withValues(alpha: 0.8)
+                                          : OceanColors.deepOcean.withValues(alpha: 
+                                              0.8,
+                                            ),
+                                    ),
+                                    textAlign: TextAlign.center,
                                   ),
-                                  child: Row(
+
+                                  const SizedBox(height: 40),
+
+                                  // Mode Toggle with Glass Effect
+                                  _buildGlassModeToggle(isDarkMode, isArabic),
+
+                                  const SizedBox(height: 32),
+
+                                  // Email/Phone Field
+                                  _buildGlassField(
+                                    controller: _emailController,
+                                    hint: _isEmailMode
+                                        ? (isArabic
+                                              ? 'البريد الإلكتروني'
+                                              : 'Email')
+                                        : '+962',
+                                    icon: _isEmailMode
+                                        ? Icons.email_outlined
+                                        : Icons.phone_outlined,
+                                    keyboardType: _isEmailMode
+                                        ? TextInputType.emailAddress
+                                        : TextInputType.phone,
+                                    validator: _isEmailMode
+                                        ? (value) =>
+                                              Validators.validateEmail(value)
+                                        : (value) =>
+                                              Validators.validatePhone(value),
+                                    isDarkMode: isDarkMode,
+                                  ),
+
+                                  const SizedBox(height: 20),
+
+                                  // Password Field (Email mode only)
+                                  if (_isEmailMode) ...[
+                                    _buildGlassField(
+                                      controller: _passwordController,
+                                      hint: isArabic
+                                          ? 'كلمة المرور'
+                                          : 'Password',
+                                      icon: Icons.lock_outline,
+                                      obscureText: _obscurePassword,
+                                      validator: (value) =>
+                                          Validators.validatePassword(value),
+                                      isDarkMode: isDarkMode,
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          _obscurePassword
+                                              ? Icons.visibility_off
+                                              : Icons.visibility,
+                                          color: isDarkMode
+                                              ? OceanColors.neonCyan
+                                                    .withValues(alpha: 0.8)
+                                              : OceanColors.oceanBlue
+                                                    .withValues(alpha: 0.8),
+                                        ),
+                                        onPressed: () => setState(
+                                          () => _obscurePassword =
+                                              !_obscurePassword,
+                                        ),
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 16),
+
+                                    // Forgot Password
+                                    Align(
+                                      alignment: isArabic
+                                          ? Alignment.centerRight
+                                          : Alignment.centerLeft,
+                                      child: TextButton(
+                                        onPressed: () =>
+                                            context.push('/forgot-password'),
+                                        child: Text(
+                                          isArabic
+                                              ? 'نسيت كلمة المرور؟'
+                                              : 'Forgot Password?',
+                                          style: TextStyle(
+                                            color: isDarkMode
+                                                ? OceanColors.neonCyan
+                                                      .withValues(alpha: 0.8)
+                                                : OceanColors.oceanBlue
+                                                      .withValues(alpha: 0.8),
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+
+                                  const SizedBox(height: 32),
+
+                                  // Login Button with Glass Effect
+                                  _buildGlassSubmitButton(isDarkMode, isArabic),
+
+                                  const SizedBox(height: 24),
+
+                                  // Guest Login Button
+                                  _buildGuestLoginButton(isDarkMode, isArabic),
+
+                                  const SizedBox(height: 16),
+
+                                  // OR Divider
+                                  Row(
                                     children: [
                                       Expanded(
-                                        child: GestureDetector(
-                                          onTap: () => setState(
-                                            () => _isEmailMode = true,
-                                          ),
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 12,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: _isEmailMode
-                                                  ? Theme.of(
-                                                      context,
-                                                    ).colorScheme.primary
-                                                  : Colors.transparent,
-                                              borderRadius:
-                                                  BorderRadius.circular(16),
-                                            ),
-                                            child: Text(
-                                              'البريد الإلكتروني',
-                                              textAlign: TextAlign.center,
-                                              style: GoogleFonts.tajawal(
-                                                color: _isEmailMode
-                                                    ? Colors.white
-                                                    : Theme.of(
-                                                        context,
-                                                      ).colorScheme.primary,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
+                                        child: Divider(
+                                          color: isDarkMode
+                                              ? Colors.white.withValues(alpha: 0.3)
+                                              : OceanColors.deepOcean.withValues(alpha: 0.3),
+                                          thickness: 1,
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                                        child: Text(
+                                          isArabic ? 'أو' : 'OR',
+                                          style: TextStyle(
+                                            color: isDarkMode
+                                                ? Colors.white.withValues(alpha: 0.6)
+                                                : OceanColors.deepOcean.withValues(alpha: 0.6),
+                                            fontSize: 14,
                                           ),
                                         ),
                                       ),
                                       Expanded(
-                                        child: GestureDetector(
-                                          onTap: () => setState(
-                                            () => _isEmailMode = false,
-                                          ),
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 12,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: !_isEmailMode
-                                                  ? Theme.of(
-                                                      context,
-                                                    ).colorScheme.primary
-                                                  : Colors.transparent,
-                                              borderRadius:
-                                                  BorderRadius.circular(16),
-                                            ),
-                                            child: Text(
-                                              'رقم الهاتف',
-                                              textAlign: TextAlign.center,
-                                              style: GoogleFonts.tajawal(
-                                                color: !_isEmailMode
-                                                    ? Colors.white
-                                                    : Theme.of(
-                                                        context,
-                                                      ).colorScheme.primary,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
+                                        child: Divider(
+                                          color: isDarkMode
+                                              ? Colors.white.withValues(alpha: 0.3)
+                                              : OceanColors.deepOcean.withValues(alpha: 0.3),
+                                          thickness: 1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+
+                                  const SizedBox(height: 16),
+
+                                  // Sign Up Link
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        isArabic
+                                            ? 'ليس لديك حساب؟ '
+                                            : "Don't have an account? ",
+                                        style: TextStyle(
+                                          color: isDarkMode
+                                              ? Colors.white.withValues(alpha: 0.8)
+                                              : OceanColors.deepOcean
+                                                    .withValues(alpha: 0.8),
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: () =>
+                                            context.push('/signup'),
+                                        child: Text(
+                                          isArabic
+                                              ? 'إنشاء حساب جديد'
+                                              : 'Sign Up',
+                                          style: TextStyle(
+                                            color: isDarkMode
+                                                ? OceanColors.neonCyan
+                                                : OceanColors.oceanBlue,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
                                           ),
                                         ),
                                       ),
                                     ],
                                   ),
-                                ),
-                                const SizedBox(height: 24),
-                                Form(
-                                  key: _formKey,
-                                  child: Column(
-                                    children: [
-                                      ...(_isEmailMode
-                                          ? [
-                                              _buildTextField(
-                                                controller: _emailController,
-                                                label: context.l10n.email,
-                                                icon: Icons.email_outlined,
-                                                keyboardType:
-                                                    TextInputType.emailAddress,
-                                                validator:
-                                                    Validators.validateEmail,
-                                              ),
-                                              const SizedBox(height: 20),
-                                              _buildTextField(
-                                                controller: _passwordController,
-                                                label: context.l10n.password,
-                                                icon: Icons.lock_outline,
-                                                obscureText: _obscurePassword,
-                                                validator:
-                                                    Validators.validatePassword,
-                                                suffixIcon: IconButton(
-                                                  icon: Icon(
-                                                    _obscurePassword
-                                                        ? Icons
-                                                              .visibility_off_outlined
-                                                        : Icons
-                                                              .visibility_outlined,
-                                                    color: Theme.of(
-                                                      context,
-                                                    ).colorScheme.primary,
-                                                  ),
-                                                  onPressed: () => setState(
-                                                    () => _obscurePassword =
-                                                        !_obscurePassword,
-                                                  ),
-                                                ),
-                                              ),
-                                            ]
-                                          : [
-                                              _buildTextField(
-                                                controller: _phoneController,
-                                                label: 'رقم الهاتف',
-                                                icon: Icons.phone_outlined,
-                                                keyboardType:
-                                                    TextInputType.phone,
-                                                validator: (value) {
-                                                  if (value?.isEmpty ?? true) {
-                                                    return 'يرجى إدخال رقم الهاتف';
-                                                  }
-                                                  return null;
-                                                },
-                                              ),
-                                            ]),
-                                      const SizedBox(height: 32),
-                                      _buildButton(
-                                        onPressed: _isLoading
-                                            ? null
-                                            : (_isEmailMode
-                                                  ? _loginWithPassword
-                                                  : _loginWithPhone),
-                                        text: context.l10n.login,
-                                        isLoading: _isLoading,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 24),
-                                TextButton(
-                                  onPressed: () =>
-                                      context.go('/forgot-password'),
-                                  child: Text(context.l10n.forgotPassword),
-                                ),
-                                TextButton(
-                                  onPressed: () => context.go('/signup'),
-                                  child: Text(context.l10n.signup),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          );
+                        },
                       ),
                     ),
                   ),
-                ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildGlassLogo(bool isDarkMode) {
+    return AnimatedBuilder(
+      animation: _glowAnimation,
+      builder: (context, child) {
+        return Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDarkMode
+                  ? [
+                      Colors.white.withValues(alpha: 0.1),
+                      Colors.white.withValues(alpha: 0.05),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.3),
+                      Colors.white.withValues(alpha: 0.1),
+                    ],
+            ),
+            border: Border.all(
+              color: isDarkMode
+                  ? OceanColors.neonCyan.withValues(alpha: 0.5 * _glowAnimation.value)
+                  : OceanColors.oceanBlue.withValues(alpha: 
+                      0.5 * _glowAnimation.value,
+                    ),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isDarkMode
+                    ? OceanColors.neonCyan.withValues(alpha: 
+                        0.3 * _glowAnimation.value,
+                      )
+                    : OceanColors.oceanBlue.withValues(alpha: 
+                        0.3 * _glowAnimation.value,
+                      ),
+                blurRadius: 20,
+                spreadRadius: 5,
               ),
             ],
+          ),
+          child: Icon(
+            Icons.account_balance_wallet_outlined,
+            size: 40,
+            color: isDarkMode ? OceanColors.neonCyan : OceanColors.oceanBlue,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildGlassModeToggle(bool isDarkMode, bool isArabic) {
+    return Container(
+      height: 50,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDarkMode
+              ? [Colors.white.withValues(alpha: 0.1), Colors.white.withValues(alpha: 0.05)]
+              : [Colors.white.withValues(alpha: 0.3), Colors.white.withValues(alpha: 0.1)],
+        ),
+        borderRadius: BorderRadius.circular(25),
+        border: Border.all(
+          color: isDarkMode
+              ? OceanColors.neonCyan.withValues(alpha: 0.2)
+              : OceanColors.oceanBlue.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          _buildToggleOption(
+            isArabic ? 'البريد الإلكتروني' : 'Email',
+            true,
+            isDarkMode,
+          ),
+          _buildToggleOption(
+            isArabic ? 'رقم الهاتف' : 'Phone',
+            false,
+            isDarkMode,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToggleOption(String text, bool isEmailOption, bool isDarkMode) {
+    final isSelected = _isEmailMode == isEmailOption;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _isEmailMode = isEmailOption),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          height: 50,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(25),
+            gradient: isSelected
+                ? LinearGradient(
+                    colors: isDarkMode
+                        ? [
+                            OceanColors.neonCyan.withValues(alpha: 0.3),
+                            OceanColors.neonCyan.withValues(alpha: 0.1),
+                          ]
+                        : [
+                            OceanColors.oceanBlue.withValues(alpha: 0.3),
+                            OceanColors.oceanBlue.withValues(alpha: 0.1),
+                          ],
+                  )
+                : null,
+            border: isSelected
+                ? Border.all(
+                    color: isDarkMode
+                        ? OceanColors.neonCyan.withValues(alpha: 0.5)
+                        : OceanColors.oceanBlue.withValues(alpha: 0.5),
+                    width: 1,
+                  )
+                : null,
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: isDarkMode
+                          ? OceanColors.neonCyan.withValues(alpha: 0.3)
+                          : OceanColors.oceanBlue.withValues(alpha: 0.3),
+                      blurRadius: 10,
+                      spreadRadius: 2,
+                    ),
+                  ]
+                : null,
+          ),
+          child: Center(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: isDarkMode ? Colors.white : OceanColors.deepOcean,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildTextField({
+  Widget _buildGlassField({
     required TextEditingController controller,
-    required String label,
+    required String hint,
     required IconData icon,
     TextInputType? keyboardType,
     bool obscureText = false,
     String? Function(String?)? validator,
     Widget? suffixIcon,
+    required bool isDarkMode,
   }) {
     return Container(
+      height: 60,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Theme.of(context).colorScheme.surface,
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.02),
-            Theme.of(context).colorScheme.surface,
-          ],
+          colors: isDarkMode
+              ? [Colors.white.withValues(alpha: 0.1), Colors.white.withValues(alpha: 0.05)]
+              : [Colors.white.withValues(alpha: 0.3), Colors.white.withValues(alpha: 0.1)],
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
-          width: 2,
+          color: isDarkMode
+              ? OceanColors.neonCyan.withValues(alpha: 0.3)
+              : OceanColors.oceanBlue.withValues(alpha: 0.3),
+          width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-            blurRadius: 15,
-            spreadRadius: 2,
+            color: isDarkMode
+                ? OceanColors.neonCyan.withValues(alpha: 0.1)
+                : OceanColors.oceanBlue.withValues(alpha: 0.1),
+            blurRadius: 10,
+            spreadRadius: 1,
           ),
         ],
       ),
@@ -485,43 +716,26 @@ class _LoginScreenState extends State<LoginScreen>
         keyboardType: keyboardType,
         obscureText: obscureText,
         validator: validator,
-        style: GoogleFonts.tajawal(
-          color: Theme.of(context).colorScheme.onSurface,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
+        style: TextStyle(
+          color: isDarkMode ? Colors.white : OceanColors.deepOcean,
         ),
         decoration: InputDecoration(
-          labelText: label,
-          labelStyle: GoogleFonts.tajawal(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.7),
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
+          hintText: hint,
+          hintStyle: TextStyle(
+            color: isDarkMode
+                ? Colors.white.withValues(alpha: 0.6)
+                : OceanColors.deepOcean.withValues(alpha: 0.6),
           ),
-          prefixIcon: Container(
-            margin: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                  Theme.of(
-                    context,
-                  ).colorScheme.secondary.withValues(alpha: 0.1),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              icon,
-              color: Theme.of(context).colorScheme.primary,
-              size: 24,
-            ),
+          prefixIcon: Icon(
+            icon,
+            color: isDarkMode
+                ? OceanColors.neonCyan.withValues(alpha: 0.8)
+                : OceanColors.oceanBlue.withValues(alpha: 0.8),
           ),
           suffixIcon: suffixIcon,
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
+            horizontal: 16,
             vertical: 20,
           ),
         ),
@@ -529,59 +743,235 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildButton({
-    required VoidCallback? onPressed,
-    required String text,
-    bool isLoading = false,
-  }) {
-    return Container(
-      height: 58,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.secondary,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-            blurRadius: 20,
-            spreadRadius: 2,
+  Widget _buildGlassSubmitButton(bool isDarkMode, bool isArabic) {
+    return AnimatedBuilder(
+      animation: _glowAnimation,
+      builder: (context, child) {
+        return Container(
+          width: double.infinity,
+          height: 56,
+          decoration: BoxDecoration(
+            gradient: _isLoading
+                ? LinearGradient(colors: [Colors.grey, Colors.grey.shade700])
+                : LinearGradient(
+                    colors: isDarkMode
+                        ? [
+                            OceanColors.neonCyan,
+                            OceanColors.neonCyan.withValues(alpha: 0.7),
+                          ]
+                        : [OceanColors.oceanBlue, OceanColors.deepOcean],
+                  ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDarkMode
+                  ? OceanColors.neonCyan.withValues(alpha: 
+                      _isLoading ? 0.3 : 0.5 * _glowAnimation.value,
+                    )
+                  : OceanColors.oceanBlue.withValues(alpha: 
+                      _isLoading ? 0.3 : 0.5 * _glowAnimation.value,
+                    ),
+              width: 2,
+            ),
+            boxShadow: _isLoading
+                ? []
+                : [
+                    BoxShadow(
+                      color: isDarkMode
+                          ? OceanColors.neonCyan.withValues(alpha: 
+                              0.5 * _glowAnimation.value,
+                            )
+                          : OceanColors.oceanBlue.withValues(alpha: 
+                              0.5 * _glowAnimation.value,
+                            ),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    ),
+                  ],
           ),
-        ],
-      ),
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          elevation: 0,
-        ),
-        child: isLoading
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
-            : Text(
-                text,
-                style: GoogleFonts.tajawal(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
+          child: ElevatedButton(
+            onPressed: _isLoading ? null : _handleLogin,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
-      ),
+            ),
+            child: _isLoading
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Text(
+                    _isEmailMode
+                        ? (isArabic ? 'تسجيل الدخول' : 'Sign In')
+                        : (isArabic ? 'إرسال رمز التحقق' : 'Send OTP'),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class WavePainter extends CustomPainter {
+  final double animationValue;
+  final bool isDarkMode;
+
+  WavePainter(this.animationValue, this.isDarkMode);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint paint = Paint()..style = PaintingStyle.fill;
+
+    final Path path = Path();
+
+    // First wave
+    paint.color = isDarkMode
+        ? OceanColors.neonCyan.withValues(alpha: 0.1)
+        : OceanColors.oceanBlue.withValues(alpha: 0.25);
+
+    path.moveTo(0, size.height * 0.7);
+    for (double i = 0; i <= size.width; i++) {
+      path.lineTo(
+        i,
+        size.height * 0.7 +
+            30 *
+                math.sin(
+                  (i / size.width * 2 * math.pi) +
+                      (animationValue * 2 * math.pi),
+                ),
+      );
+    }
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+
+    canvas.drawPath(path, paint);
+
+    // Second wave
+    paint.color = isDarkMode
+        ? OceanColors.neonCyan.withValues(alpha: 0.05)
+        : OceanColors.lightAccent.withValues(alpha: 0.35);
+
+    final Path path2 = Path();
+    path2.moveTo(0, size.height * 0.8);
+    for (double i = 0; i <= size.width; i++) {
+      path2.lineTo(
+        i,
+        size.height * 0.8 +
+            20 *
+                math.sin(
+                  (i / size.width * 3 * math.pi) +
+                      (animationValue * 3 * math.pi),
+                ),
+      );
+    }
+    path2.lineTo(size.width, size.height);
+    path2.lineTo(0, size.height);
+    path2.close();
+
+    canvas.drawPath(path2, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+extension on _LoginScreenState {
+  Widget _buildGuestLoginButton(bool isDarkMode, bool isArabic) {
+    return AnimatedBuilder(
+      animation: _glowAnimation,
+      builder: (context, child) {
+        return Container(
+          width: double.infinity,
+          height: 56,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDarkMode
+                  ? [
+                      Colors.white.withValues(alpha: 0.1),
+                      Colors.white.withValues(alpha: 0.05),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.3),
+                      Colors.white.withValues(alpha: 0.1),
+                    ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDarkMode
+                  ? Colors.white.withValues(alpha: 0.3 * _glowAnimation.value)
+                  : OceanColors.deepOcean.withValues(alpha: 0.3 * _glowAnimation.value),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isDarkMode
+                    ? Colors.white.withValues(alpha: 0.1 * _glowAnimation.value)
+                    : OceanColors.deepOcean.withValues(alpha: 0.1 * _glowAnimation.value),
+                blurRadius: 10,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: ElevatedButton(
+            onPressed: _isLoading ? null : _handleGuestLogin,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: _isLoading
+                ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        isDarkMode ? Colors.white : OceanColors.deepOcean,
+                      ),
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.person_outline,
+                        size: 20,
+                        color: isDarkMode
+                            ? Colors.white.withValues(alpha: 0.8)
+                            : OceanColors.deepOcean.withValues(alpha: 0.8),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        isArabic ? 'متابعة كضيف' : 'Continue as Guest',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: isDarkMode
+                              ? Colors.white.withValues(alpha: 0.8)
+                              : OceanColors.deepOcean.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        );
+      },
     );
   }
 }

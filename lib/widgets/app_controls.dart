@@ -5,36 +5,39 @@ import 'settings_dialog.dart';
 
 class AppControls extends StatelessWidget {
   final bool showBackground;
-  
-  const AppControls({
-    super.key,
-    this.showBackground = true,
-  });
+
+  const AppControls({super.key, this.showBackground = true});
 
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         final isRTL = themeService.languageCode == 'ar';
-        
+
         return Container(
           padding: const EdgeInsets.all(8),
-          decoration: showBackground ? BoxDecoration(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? Colors.black.withOpacity(0.4)
-                : Colors.white.withOpacity(0.9),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                blurRadius: 10,
-                spreadRadius: 2,
-              ),
-            ],
-          ) : null,
+          decoration: showBackground
+              ? BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.black.withValues(alpha: 0.4)
+                      : Colors.white.withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.3),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.1),
+                      blurRadius: 10,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                )
+              : null,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
@@ -58,7 +61,9 @@ class AppControls extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+            color: Theme.of(
+              context,
+            ).colorScheme.primary.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
@@ -80,11 +85,13 @@ class AppControls extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+            color: Theme.of(
+              context,
+            ).colorScheme.primary.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
-            Icons.language_outlined,
+            Icons.translate_outlined,
             color: Theme.of(context).colorScheme.primary,
             size: 22,
           ),

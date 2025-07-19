@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'smart_back_handler.dart';
 
 class BackButtonHandler extends StatelessWidget {
   final Widget child;
   final String? fallbackRoute;
   final bool canPop;
   final VoidCallback? onBackPressed;
+  final bool isMainScreen;
 
   const BackButtonHandler({
     super.key,
@@ -13,40 +15,29 @@ class BackButtonHandler extends StatelessWidget {
     this.fallbackRoute,
     this.canPop = true,
     this.onBackPressed,
+    this.isMainScreen = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: canPop,
-      onPopInvoked: (didPop) {
-        if (!didPop) {
-          if (onBackPressed != null) {
-            onBackPressed!();
-          } else if (fallbackRoute != null) {
-            context.go(fallbackRoute!);
-          } else if (context.canPop()) {
-            context.pop();
-          }
+    if (isMainScreen) {
+      // الشاشة الرئيسية - استخدام SmartBackHandler
+      return SmartBackHandler(isMainScreen: true, child: child);
+    }
+
+    // الشاشات العادية - معالجة عادية
+    return WillPopScope(
+      onWillPop: () async {
+        if (onBackPressed != null) {
+          onBackPressed!();
+        } else if (fallbackRoute != null) {
+          context.go(fallbackRoute!);
+        } else if (canPop) {
+          Navigator.of(context).pop();
         }
+        return false;
       },
       child: child,
-    );
-  }
-}
-
-// Extension لتسهيل الاستخدام
-extension BackButtonHandlerX on Widget {
-  Widget withBackButton({
-    String? fallbackRoute,
-    bool canPop = true,
-    VoidCallback? onBackPressed,
-  }) {
-    return BackButtonHandler(
-      fallbackRoute: fallbackRoute,
-      canPop: canPop,
-      onBackPressed: onBackPressed,
-      child: this,
     );
   }
 }

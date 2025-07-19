@@ -6,8 +6,6 @@ import '../utils/app_localizations.dart';
 
 class SettingsDialog {
   static void showLanguageDialog(BuildContext context) {
-    final themeService = Provider.of<ThemeService>(context, listen: false);
-    
     showDialog(
       context: context,
       builder: (context) => Consumer<ThemeService>(
@@ -33,7 +31,7 @@ class SettingsDialog {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
-                    Icons.language,
+                    Icons.translate,
                     color: Colors.white,
                     size: 20,
                   ),
@@ -68,7 +66,7 @@ class SettingsDialog {
                   '🇯🇴',
                   context.l10n.arabic,
                   'ar',
-                  Icons.language,
+                  Icons.translate,
                 ),
                 const SizedBox(height: 12),
                 _buildLanguageOption(
@@ -77,7 +75,7 @@ class SettingsDialog {
                   '🇺🇸',
                   context.l10n.english,
                   'en',
-                  Icons.language,
+                  Icons.translate,
                 ),
               ],
             ),
@@ -101,8 +99,6 @@ class SettingsDialog {
   }
 
   static void showThemeDialog(BuildContext context) {
-    final themeService = Provider.of<ThemeService>(context, listen: false);
-    
     showDialog(
       context: context,
       builder: (context) => Consumer<ThemeService>(
@@ -201,17 +197,17 @@ class SettingsDialog {
     IconData icon,
   ) {
     final isSelected = themeService.savedLanguageCode == languageCode;
-    
+
     return Container(
       decoration: BoxDecoration(
-        color: isSelected 
-            ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+        color: isSelected
+            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isSelected 
+          color: isSelected
               ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
           width: isSelected ? 2 : 1,
         ),
       ),
@@ -223,9 +219,11 @@ class SettingsDialog {
             const SizedBox(width: 8),
             Icon(
               icon,
-              color: isSelected 
+              color: isSelected
                   ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  : Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
               size: 20,
             ),
           ],
@@ -234,13 +232,13 @@ class SettingsDialog {
           title,
           style: GoogleFonts.tajawal(
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            color: isSelected 
+            color: isSelected
                 ? Theme.of(context).colorScheme.primary
                 : Theme.of(context).colorScheme.onSurface,
           ),
           textDirection: context.textDirection,
         ),
-        trailing: isSelected 
+        trailing: isSelected
             ? Icon(
                 Icons.check_circle,
                 color: Theme.of(context).colorScheme.primary,
@@ -250,7 +248,10 @@ class SettingsDialog {
           await themeService.setLanguage(languageCode);
           if (context.mounted) {
             Navigator.of(context).pop();
-            _showSuccessSnackBar(context, context.l10n.languageChangedSuccessfully);
+            _showSuccessSnackBar(
+              context,
+              context.l10n.languageChangedSuccessfully,
+            );
           }
         },
       ),
@@ -265,17 +266,17 @@ class SettingsDialog {
     ThemeMode themeMode,
   ) {
     final isSelected = themeService.themeMode == themeMode;
-    
+
     return Container(
       decoration: BoxDecoration(
-        color: isSelected 
-            ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+        color: isSelected
+            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isSelected 
+          color: isSelected
               ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
           width: isSelected ? 2 : 1,
         ),
       ),
@@ -284,19 +285,23 @@ class SettingsDialog {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: isSelected 
-                ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
                 : Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.3),
             ),
           ),
           child: Icon(
             icon,
-            color: isSelected 
+            color: isSelected
                 ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                : Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
             size: 20,
           ),
         ),
@@ -304,13 +309,13 @@ class SettingsDialog {
           title,
           style: GoogleFonts.tajawal(
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            color: isSelected 
+            color: isSelected
                 ? Theme.of(context).colorScheme.primary
                 : Theme.of(context).colorScheme.onSurface,
           ),
           textDirection: context.textDirection,
         ),
-        trailing: isSelected 
+        trailing: isSelected
             ? Icon(
                 Icons.check_circle,
                 color: Theme.of(context).colorScheme.primary,
@@ -320,7 +325,10 @@ class SettingsDialog {
           await themeService.setThemeMode(themeMode);
           if (context.mounted) {
             Navigator.of(context).pop();
-            _showSuccessSnackBar(context, context.l10n.themeChangedSuccessfully);
+            _showSuccessSnackBar(
+              context,
+              context.l10n.themeChangedSuccessfully,
+            );
           }
         },
       ),
@@ -344,9 +352,7 @@ class SettingsDialog {
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
         margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }

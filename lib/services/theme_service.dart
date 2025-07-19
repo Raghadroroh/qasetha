@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui';
 
 class ThemeService extends ChangeNotifier {
   static const String _themeKey = 'theme_mode';
   static const String _languageKey = 'language_code';
   static const String _firstTimeKey = 'first_time_language';
-  
+
   ThemeMode _themeMode = ThemeMode.dark; // افتراضي داكن
   String _languageCode = 'system'; // افتراضي لغة النظام
   bool _isFirstTimeLanguageSelection = true;
@@ -18,7 +19,7 @@ class ThemeService extends ChangeNotifier {
   bool get isLightMode => _themeMode == ThemeMode.light;
   bool get isSystemMode => _themeMode == ThemeMode.system;
   bool get isFirstTimeLanguageSelection => _isFirstTimeLanguageSelection;
-  
+
   // الحصول على كود اللغة الفعلي
   String _getEffectiveLanguageCode() {
     if (_languageCode == 'system') {
@@ -36,7 +37,8 @@ class ThemeService extends ChangeNotifier {
     } else {
       _themeMode = ThemeMode.values[themeIndex];
     }
-    _languageCode = prefs.getString(_languageKey) ?? 'system'; // افتراضي لغة النظام
+    _languageCode =
+        prefs.getString(_languageKey) ?? 'system'; // افتراضي لغة النظام
     _isFirstTimeLanguageSelection = prefs.getBool(_firstTimeKey) ?? true;
     notifyListeners();
   }
@@ -54,7 +56,7 @@ class ThemeService extends ChangeNotifier {
     await prefs.setString(_languageKey, languageCode);
     notifyListeners();
   }
-  
+
   void toggleTheme() {
     switch (_themeMode) {
       case ThemeMode.light:
@@ -70,7 +72,7 @@ class ThemeService extends ChangeNotifier {
     notifyListeners();
     _saveThemeMode();
   }
-  
+
   void toggleLanguage() {
     switch (_languageCode) {
       case 'ar':
@@ -86,7 +88,7 @@ class ThemeService extends ChangeNotifier {
     notifyListeners();
     _saveLanguage();
   }
-  
+
   IconData get themeIcon {
     switch (_themeMode) {
       case ThemeMode.light:
@@ -97,7 +99,7 @@ class ThemeService extends ChangeNotifier {
         return Icons.brightness_auto;
     }
   }
-  
+
   String getThemeName(String languageCode) {
     final isArabic = languageCode == 'ar';
     switch (_themeMode) {
@@ -109,7 +111,7 @@ class ThemeService extends ChangeNotifier {
         return isArabic ? 'النظام' : 'System';
     }
   }
-  
+
   String getLanguageName(String languageCode) {
     final isArabic = languageCode == 'ar';
     switch (_languageCode) {
@@ -123,17 +125,17 @@ class ThemeService extends ChangeNotifier {
         return isArabic ? 'غير محدد' : 'Unknown';
     }
   }
-  
+
   void _saveThemeMode() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_themeKey, _themeMode.index);
   }
-  
+
   void _saveLanguage() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_languageKey, _languageCode);
   }
-  
+
   Future<void> setFirstTimeLanguageSelection(bool isFirstTime) async {
     _isFirstTimeLanguageSelection = isFirstTime;
     final prefs = await SharedPreferences.getInstance();
@@ -141,3 +143,10 @@ class ThemeService extends ChangeNotifier {
     notifyListeners();
   }
 }
+
+// Riverpod provider for ThemeService
+final themeServiceProvider = ChangeNotifierProvider<ThemeService>((ref) {
+  final service = ThemeService();
+  service.loadSettings(); // Load settings when provider is created
+  return service;
+});

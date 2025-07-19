@@ -1,318 +1,467 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../constants/app_colors.dart';
-import '../../constants/app_strings.dart';
-import '../../services/firebase_auth_service.dart';
-import '../../services/otp_service.dart';
-import '../../utils/validators.dart';
+import 'package:provider/provider.dart' as provider;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
+import 'dart:math' as math;
+import '../../services/theme_service.dart';
+import '../../widgets/app_controls.dart';
 
-class VerifyEmailScreen extends StatefulWidget {
-  final String email;
-  final String phoneNumber;
-  
-  const VerifyEmailScreen({
-    super.key,
-    required this.email,
-    required this.phoneNumber,
-  });
+import '../../providers/auth_state_provider.dart';
 
-  @override
-  State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
+class OceanColors {
+  static const Color lightBackground1 = Color(0xFFE8F4F8);
+  static const Color lightBackground2 = Color(0xFFB8D4D9);
+  static const Color lightAccent = Color(0xFF7FB3B3);
+  static const Color oceanBlue = Color(0xFF2E7D8A);
+  static const Color deepOcean = Color(0xFF1A4B52);
+  static const Color darkBackground1 = Color(0xFF0A0E21);
+  static const Color darkBackground2 = Color(0xFF1A1B3A);
+  static const Color darkAccent = Color(0xFF2D1B69);
+  static const Color darkBlue = Color(0xFF0A192F);
+  static const Color neonCyan = Color(0xFF00E5FF);
 }
 
-class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
-  final _otpController = TextEditingController();
-  final _authService = FirebaseAuthService();
-  final _otpService = OTPService();
-  
+class VerifyEmailScreen extends ConsumerStatefulWidget {
+  const VerifyEmailScreen({super.key});
+
+  @override
+  ConsumerState<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
+}
+
+class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen>
+    with TickerProviderStateMixin {
+  Timer? _timer;
   bool _isLoading = false;
-  bool _isEmailVerified = false;
-  int _remainingSeconds = 0;
+
+  late AnimationController _glowController;
+  late AnimationController _waveController;
+  late Animation<double> _glowAnimation;
+  late Animation<double> _waveAnimation;
 
   @override
   void initState() {
     super.initState();
-    _sendVerificationEmail();
-    _checkEmailVerification();
+    _startEmailCheck();
+
+    _glowController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _waveController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    )..repeat();
+
+    _glowAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
+    );
+
+    _waveAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _waveController, curve: Curves.linear));
   }
 
   @override
   void dispose() {
-    _otpController.dispose();
+    _timer?.cancel();
+    _glowController.dispose();
+    _waveController.dispose();
     super.dispose();
   }
 
-  Future<void> _sendVerificationEmail() async {
-    try {
-      // TODO: سيتم تفعيل إرسال OTP بعد تهيئة Firebase
-      // await _otpService.sendEmailOTP(widget.email);
-      _startCountdown();
-      _showSnackBar('تم إرسال رمز التحقق (وهمي)');
-    } catch (e) {
-      _showSnackBar(AppStrings.error, isError: true);
-    }
-  }
-
-  Future<void> _checkEmailVerification() async {
-    while (mounted && !_isEmailVerified) {
-      await Future.delayed(const Duration(seconds: 3));
-      final user = _authService.currentUser;
-      if (user != null) {
-        await user.reload();
-        if (user.emailVerified) {
-          setState(() => _isEmailVerified = true);
-          _navigateToHome();
-          break;
+  void _startEmailCheck() {
+    _timer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+      final authNotifier = ref.read(authStateProvider.notifier);
+      await authNotifier.checkEmailVerification();
+      
+      final authState = ref.read(authStateProvider);
+      if (authState.isAuthenticated) {
+        timer.cancel();
+        if (mounted) {
+          context.go('/dashboard');
         }
       }
-    }
+    });
   }
 
-  Future<void> _verifyOTP() async {
-    if (_otpController.text.trim().length != 6) {
-      _showSnackBar(AppStrings.otpRequired, isError: true);
-      return;
-    }
-
+  Future<void> _resendEmail() async {
     setState(() => _isLoading = true);
 
     try {
-      // TODO: سيتم تفعيل تحقق OTP بعد تهيئة Firebase
-      _showSnackBar('Firebase غير مهيأ بعد', isError: true);
-      
-      // final result = await _otpService.verifyOTP(_otpController.text.trim());
-      // if (result.isSuccess) {
-      //   _showSnackBar(AppStrings.emailVerified);
-      //   _navigateToHome();
-      // } else {
-      //   _showSnackBar(result.message, isError: true);
-      // }
-    } catch (e) {
-      _showSnackBar(AppStrings.error, isError: true);
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
+      final authNotifier = ref.read(authStateProvider.notifier);
+      final success = await authNotifier.sendEmailVerification(context: context);
 
-  Future<void> _resendOTP() async {
-    if (_remainingSeconds > 0) return;
-
-    setState(() => _isLoading = true);
-
-    try {
-      // TODO: سيتم تفعيل إعادة إرسال OTP بعد تهيئة Firebase
-      // await _otpService.sendEmailOTP(widget.email);
-      _startCountdown();
-      _showSnackBar('تم إعادة الإرسال (وهمي)');
-    } catch (e) {
-      _showSnackBar(AppStrings.error, isError: true);
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  void _startCountdown() async {
-    // TODO: سيتم تفعيل العد التنازلي بعد تهيئة Firebase
-    _remainingSeconds = 60; // قيمة وهمية مؤقتة
-    
-    while (_remainingSeconds > 0 && mounted) {
-      await Future.delayed(const Duration(seconds: 1));
       if (mounted) {
-        setState(() => _remainingSeconds--);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? 'تم إرسال بريد التأكيد' : 'حدث خطأ في الإرسال'),
+            backgroundColor: success ? Colors.green : Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('حدث خطأ في إعادة الإرسال'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
-  }
-
-  void _navigateToHome() {
-    if (mounted) context.go('/home');
-  }
-
-  void _showSnackBar(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: GoogleFonts.cairo(color: Colors.white),
-        ),
-        backgroundColor: isError ? AppColors.error : AppColors.success,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.backgroundDark1,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text(
-          AppStrings.emailVerification,
-          style: GoogleFonts.cairo(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 40),
-                
-                // أيقونة الإيميل
-                Container(
-                  height: 120,
-                  width: 120,
-                  margin: const EdgeInsets.symmetric(vertical: 32),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: AppColors.primaryGradient,
+    return provider.Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        final isDarkMode = themeService.isDarkMode;
+        final isArabic = themeService.languageCode == 'ar';
+        final authState = ref.watch(authStateProvider);
+        final user = authState.user;
+
+        return Scaffold(
+          body: AnimatedContainer(
+            duration: const Duration(milliseconds: 800),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDarkMode
+                    ? [
+                        OceanColors.darkBackground1,
+                        OceanColors.darkBackground2,
+                        OceanColors.darkAccent,
+                        OceanColors.darkBlue,
+                      ]
+                    : [
+                        OceanColors.lightBackground1,
+                        OceanColors.lightBackground2,
+                        OceanColors.lightAccent,
+                        OceanColors.oceanBlue,
+                      ],
+              ),
+            ),
+            child: SafeArea(
+              child: Stack(
+                children: [
+                  // Animated Wave Background
+                  AnimatedBuilder(
+                    animation: _waveAnimation,
+                    builder: (context, child) {
+                      return CustomPaint(
+                        painter: WavePainter(_waveAnimation.value, isDarkMode),
+                        size: Size.infinite,
+                      );
+                    },
                   ),
-                  child: const Icon(
-                    Icons.email_outlined,
-                    size: 60,
-                    color: Colors.white,
-                  ),
-                ),
-                
-                // العنوان
-                Text(
-                  AppStrings.emailVerification,
-                  style: GoogleFonts.cairo(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // الوصف
-                Text(
-                  'تم إرسال رمز التحقق إلى:\n${widget.email}',
-                  style: GoogleFonts.cairo(
-                    fontSize: 16,
-                    color: AppColors.textSecondary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                
-                const SizedBox(height: 32),
-                
-                // حقل OTP
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: AppColors.cardGradient,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.whiteTransparent20),
-                  ),
-                  child: TextField(
-                    controller: _otpController,
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
-                    maxLength: 6,
-                    style: GoogleFonts.cairo(
-                      color: AppColors.textPrimary,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 8,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: '000000',
-                      hintStyle: GoogleFonts.cairo(
-                        color: AppColors.textHint,
-                        fontSize: 24,
-                        letterSpacing: 8,
-                      ),
-                      border: InputBorder.none,
-                      counterText: '',
-                      contentPadding: const EdgeInsets.all(20),
-                    ),
-                  ),
-                ),
-                
-                const SizedBox(height: 24),
-                
-                // زر التحقق
-                Container(
-                  height: 56,
-                  decoration: BoxDecoration(
-                    gradient: AppColors.primaryGradient,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _verifyOTP,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : Text(
-                            AppStrings.verifyOtp,
-                            style: GoogleFonts.cairo(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+
+                  // App Controls
+                  const Positioned(top: 16, right: 16, child: AppControls()),
+
+                  // Main Content
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: AnimatedBuilder(
+                        animation: _glowAnimation,
+                        builder: (context, child) {
+                          return Container(
+                            padding: const EdgeInsets.all(32),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: isDarkMode
+                                    ? [
+                                        Colors.white.withValues(alpha: 0.1),
+                                        Colors.white.withValues(alpha: 0.05),
+                                      ]
+                                    : [
+                                        Colors.white.withValues(alpha: 0.3),
+                                        Colors.white.withValues(alpha: 0.1),
+                                      ],
+                              ),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: isDarkMode
+                                    ? OceanColors.neonCyan.withValues(alpha: 
+                                        0.3 * _glowAnimation.value,
+                                      )
+                                    : OceanColors.oceanBlue.withValues(alpha: 
+                                        0.3 * _glowAnimation.value,
+                                      ),
+                                width: 2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: isDarkMode
+                                      ? OceanColors.neonCyan.withValues(alpha: 
+                                          0.2 * _glowAnimation.value,
+                                        )
+                                      : OceanColors.oceanBlue.withValues(alpha: 
+                                          0.2 * _glowAnimation.value,
+                                        ),
+                                  blurRadius: 30,
+                                  spreadRadius: 10,
+                                ),
+                              ],
                             ),
-                          ),
-                  ),
-                ),
-                
-                const SizedBox(height: 24),
-                
-                // إعادة الإرسال
-                if (_remainingSeconds > 0)
-                  Text(
-                    'يمكنك إعادة الإرسال خلال $_remainingSeconds ثانية',
-                    style: GoogleFonts.cairo(
-                      color: AppColors.textSecondary,
-                      fontSize: 14,
-                    ),
-                    textAlign: TextAlign.center,
-                  )
-                else
-                  TextButton(
-                    onPressed: _resendOTP,
-                    child: Text(
-                      AppStrings.resendOtp,
-                      style: GoogleFonts.cairo(
-                        color: AppColors.primary,
-                        fontSize: 16,
-                        decoration: TextDecoration.underline,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Icon
+                                _buildGlassIcon(isDarkMode),
+
+                                const SizedBox(height: 32),
+
+                                // Title
+                                Text(
+                                  isArabic
+                                      ? 'تأكيد البريد الإلكتروني'
+                                      : 'Email Verification',
+                                  style: TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                    color: isDarkMode
+                                        ? Colors.white
+                                        : OceanColors.deepOcean,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+
+                                const SizedBox(height: 16),
+
+                                // Description
+                                Text(
+                                  isArabic
+                                      ? 'تم إرسال رابط التأكيد إلى بريدك الإلكتروني'
+                                      : 'Verification link sent to your email',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: isDarkMode
+                                        ? Colors.white.withValues(alpha: 0.8)
+                                        : OceanColors.deepOcean.withValues(alpha: 0.8),
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+
+                                const SizedBox(height: 8),
+
+                                if (user?.email != null)
+                                  Text(
+                                    user!.email!,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDarkMode
+                                          ? OceanColors.neonCyan
+                                          : OceanColors.oceanBlue,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+
+                                const SizedBox(height: 32),
+
+                                // Resend Button
+                                _buildResendButton(isDarkMode, isArabic),
+
+                                const SizedBox(height: 16),
+
+                                // Back to Login
+                                TextButton(
+                                  onPressed: () => context.go('/login'),
+                                  child: Text(
+                                    isArabic
+                                        ? 'العودة لتسجيل الدخول'
+                                        : 'Back to Login',
+                                    style: TextStyle(
+                                      color: isDarkMode
+                                          ? OceanColors.neonCyan
+                                          : OceanColors.oceanBlue,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),
-                
-                const Spacer(),
-                
-                // رابط تسجيل الدخول
-                TextButton(
-                  onPressed: () => context.go('/login'),
-                  child: Text(
-                    'العودة لتسجيل الدخول',
-                    style: GoogleFonts.cairo(
-                      color: AppColors.textSecondary,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
+
+  Widget _buildGlassIcon(bool isDarkMode) {
+    return AnimatedBuilder(
+      animation: _glowAnimation,
+      builder: (context, child) {
+        return Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDarkMode
+                  ? [
+                      Colors.white.withValues(alpha: 0.1),
+                      Colors.white.withValues(alpha: 0.05),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.3),
+                      Colors.white.withValues(alpha: 0.1),
+                    ],
+            ),
+            border: Border.all(
+              color: isDarkMode
+                  ? OceanColors.neonCyan.withValues(alpha: 0.5 * _glowAnimation.value)
+                  : OceanColors.oceanBlue.withValues(alpha: 0.5 * _glowAnimation.value),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isDarkMode
+                    ? OceanColors.neonCyan.withValues(alpha: 0.3 * _glowAnimation.value)
+                    : OceanColors.oceanBlue.withValues(alpha: 0.3 * _glowAnimation.value),
+                blurRadius: 20,
+                spreadRadius: 5,
+              ),
+            ],
+          ),
+          child: Icon(
+            Icons.email_outlined,
+            size: 40,
+            color: isDarkMode ? OceanColors.neonCyan : OceanColors.oceanBlue,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildResendButton(bool isDarkMode, bool isArabic) {
+    return AnimatedBuilder(
+      animation: _glowAnimation,
+      builder: (context, child) {
+        return Container(
+          width: double.infinity,
+          height: 56,
+          decoration: BoxDecoration(
+            gradient: _isLoading
+                ? LinearGradient(colors: [Colors.grey, Colors.grey.shade700])
+                : LinearGradient(
+                    colors: isDarkMode
+                        ? [
+                            OceanColors.neonCyan,
+                            OceanColors.neonCyan.withValues(alpha: 0.7),
+                          ]
+                        : [OceanColors.oceanBlue, OceanColors.deepOcean],
+                  ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: _isLoading
+                ? []
+                : [
+                    BoxShadow(
+                      color: isDarkMode
+                          ? OceanColors.neonCyan.withValues(alpha: 0.5 * _glowAnimation.value)
+                          : OceanColors.oceanBlue.withValues(alpha: 0.5 * _glowAnimation.value),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    ),
+                  ],
+          ),
+          child: ElevatedButton(
+            onPressed: _isLoading ? null : _resendEmail,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: _isLoading
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Text(
+                    isArabic ? 'إعادة الإرسال' : 'Resend Email',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class WavePainter extends CustomPainter {
+  final double animationValue;
+  final bool isDarkMode;
+
+  WavePainter(this.animationValue, this.isDarkMode);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint paint = Paint()..style = PaintingStyle.fill;
+
+    final Path path = Path();
+
+    paint.color = isDarkMode
+        ? OceanColors.neonCyan.withValues(alpha: 0.1)
+        : OceanColors.oceanBlue.withValues(alpha: 0.25);
+
+    path.moveTo(0, size.height * 0.7);
+    for (double i = 0; i <= size.width; i++) {
+      path.lineTo(
+        i,
+        size.height * 0.7 +
+            30 *
+                math.sin(
+                  (i / size.width * 2 * math.pi) +
+                      (animationValue * 2 * math.pi),
+                ),
+      );
+    }
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

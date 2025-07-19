@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../constants/app_colors.dart';
-import '../../constants/app_strings.dart';
+import '../../providers/auth_state_provider.dart';
+import '../../utils/phone_validator.dart';
+import '../../utils/app_localizations.dart';
 
-class PhoneSignupScreen extends StatefulWidget {
+class PhoneSignupScreen extends ConsumerStatefulWidget {
   const PhoneSignupScreen({super.key});
 
   @override
-  State<PhoneSignupScreen> createState() => _PhoneSignupScreenState();
+  ConsumerState<PhoneSignupScreen> createState() => _PhoneSignupScreenState();
 }
 
-class _PhoneSignupScreenState extends State<PhoneSignupScreen> {
+class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
   final _phoneController = TextEditingController();
   bool _isLoading = false;
 
@@ -22,27 +25,47 @@ class _PhoneSignupScreenState extends State<PhoneSignupScreen> {
   }
 
   Future<void> _sendOTP() async {
-    if (_phoneController.text.trim().length < 9) {
+    final phone = _phoneController.text.trim();
+    
+    if (phone.isEmpty) {
       _showSnackBar('أدخل رقم هاتف صحيح', isError: true);
+      return;
+    }
+
+    // Validate phone number
+    final validationError = PhoneValidator.getPhoneValidationError(phone, context.isRTL);
+    if (validationError != null) {
+      _showSnackBar(validationError, isError: true);
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      final phoneNumber = '+962${_phoneController.text.trim()}';
-      print('إرسال OTP إلى: $phoneNumber');
-      
-      await Future.delayed(const Duration(seconds: 2));
-      
-      if (mounted) {
-        context.go('/otp-verify', extra: {
-          'phoneNumber': phoneNumber,
-          'source': 'signup'
-        });
+      final success = await ref.read(authStateProvider.notifier).sendOTP(
+        phoneNumber: phone,
+        context: context,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        context.go(
+          '/otp-verify',
+          extra: {
+            'phoneNumber': phone,
+            'source': 'signup',
+          },
+        );
+      } else {
+        final authState = ref.read(authStateProvider);
+        _showSnackBar(
+          authState.error ?? 'خطأ في إرسال رمز التحقق',
+          isError: true,
+        );
       }
     } catch (e) {
-      print('خطأ في إرسال OTP: $e');
+      // Error sending OTP
       if (mounted) {
         _showSnackBar('خطأ في إرسال رمز التحقق', isError: true);
       }
@@ -56,10 +79,7 @@ class _PhoneSignupScreenState extends State<PhoneSignupScreen> {
   void _showSnackBar(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          message,
-          style: GoogleFonts.cairo(color: Colors.white),
-        ),
+        content: Text(message, style: GoogleFonts.cairo(color: Colors.white)),
         backgroundColor: isError ? AppColors.error : AppColors.success,
         behavior: SnackBarBehavior.floating,
       ),
@@ -86,7 +106,7 @@ class _PhoneSignupScreenState extends State<PhoneSignupScreen> {
                   border: Border.all(color: AppColors.whiteTransparent20),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 20,
                       spreadRadius: 5,
                     ),
@@ -106,9 +126,9 @@ class _PhoneSignupScreenState extends State<PhoneSignupScreen> {
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // أيقونة الهاتف
                     Container(
                       width: 80,
@@ -117,7 +137,10 @@ class _PhoneSignupScreenState extends State<PhoneSignupScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
-                          colors: [Colors.green.shade400, Colors.green.shade600],
+                          colors: [
+                            Colors.green.shade400,
+                            Colors.green.shade600,
+                          ],
                         ),
                       ),
                       child: const Icon(
@@ -126,7 +149,7 @@ class _PhoneSignupScreenState extends State<PhoneSignupScreen> {
                         color: Colors.white,
                       ),
                     ),
-                    
+
                     // العنوان
                     Text(
                       'رقم الهاتف',
@@ -137,9 +160,9 @@ class _PhoneSignupScreenState extends State<PhoneSignupScreen> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    
+
                     const SizedBox(height: 8),
-                    
+
                     Text(
                       'سنرسل لك رمز التحقق',
                       style: GoogleFonts.cairo(
@@ -148,9 +171,9 @@ class _PhoneSignupScreenState extends State<PhoneSignupScreen> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    
+
                     const SizedBox(height: 32),
-                    
+
                     // حقل رقم الهاتف الأردني
                     Container(
                       decoration: BoxDecoration(
@@ -162,7 +185,10 @@ class _PhoneSignupScreenState extends State<PhoneSignupScreen> {
                         children: [
                           // رمز الدولة
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 20,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.whiteTransparent20,
                               borderRadius: const BorderRadius.only(
@@ -172,7 +198,10 @@ class _PhoneSignupScreenState extends State<PhoneSignupScreen> {
                             ),
                             child: Row(
                               children: [
-                                const Text('🇯🇴', style: TextStyle(fontSize: 24)),
+                                const Text(
+                                  '🇯🇴',
+                                  style: TextStyle(fontSize: 24),
+                                ),
                                 const SizedBox(width: 8),
                                 Text(
                                   '+962',
@@ -208,9 +237,9 @@ class _PhoneSignupScreenState extends State<PhoneSignupScreen> {
                         ],
                       ),
                     ),
-                    
+
                     const SizedBox(height: 8),
-                    
+
                     Text(
                       'أدخل رقم هاتفك الأردني بدون الصفر',
                       style: GoogleFonts.cairo(
@@ -219,15 +248,18 @@ class _PhoneSignupScreenState extends State<PhoneSignupScreen> {
                       ),
                       textAlign: TextAlign.right,
                     ),
-                    
+
                     const SizedBox(height: 32),
-                    
+
                     // زر إرسال رمز التحقق
                     Container(
                       height: 56,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Colors.green.shade600, Colors.green.shade700],
+                          colors: [
+                            Colors.green.shade600,
+                            Colors.green.shade700,
+                          ],
                         ),
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -241,7 +273,9 @@ class _PhoneSignupScreenState extends State<PhoneSignupScreen> {
                           ),
                         ),
                         child: _isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
                             : Text(
                                 'إرسال رمز التحقق',
                                 style: GoogleFonts.cairo(
@@ -252,9 +286,9 @@ class _PhoneSignupScreenState extends State<PhoneSignupScreen> {
                               ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // الشروط والأحكام
                     Text(
                       'بالمتابعة، أنت توافق على الشروط والأحكام',

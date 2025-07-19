@@ -74,10 +74,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
   void _showSnackBar(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          message,
-          style: GoogleFonts.cairo(color: Colors.white),
-        ),
+        content: Text(message, style: GoogleFonts.cairo(color: Colors.white)),
         backgroundColor: isError ? AppColors.error : AppColors.success,
         behavior: SnackBarBehavior.floating,
       ),
@@ -117,14 +114,14 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                     title: AppStrings.manageBiometric,
                     icon: Icons.fingerprint,
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // حالة البيومترك
                   _buildSettingCard(
                     title: AppStrings.biometricStatus,
-                    subtitle: _biometricEnabled 
-                        ? AppStrings.enabled 
+                    subtitle: _biometricEnabled
+                        ? AppStrings.enabled
                         : AppStrings.disabled,
                     trailing: Switch(
                       value: _biometricEnabled,
@@ -133,9 +130,9 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                     ),
                     enabled: _biometricAvailable,
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // أنواع البيومترك المتاحة
                   if (_biometricAvailable) ...[
                     _buildSettingCard(
@@ -146,10 +143,10 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                         color: AppColors.textSecondary,
                       ),
                     ),
-                    
+
                     const SizedBox(height: 16),
                   ],
-                  
+
                   // رسالة عدم التوفر
                   if (!_biometricAvailable)
                     _buildInfoCard(
@@ -158,17 +155,17 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                       icon: Icons.info_outline,
                       color: AppColors.warning,
                     ),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // قسم الأمان العام
                   _buildSectionHeader(
                     title: 'الأمان العام',
                     icon: Icons.security,
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // تغيير كلمة المرور
                   _buildSettingCard(
                     title: AppStrings.changePassword,
@@ -182,9 +179,9 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                       // التنقل لشاشة تغيير كلمة المرور
                     },
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // إعدادات OTP
                   _buildSettingCard(
                     title: 'إعدادات رمز التحقق',
@@ -198,13 +195,14 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                       // التنقل لشاشة إعدادات OTP
                     },
                   ),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // معلومات إضافية
                   _buildInfoCard(
                     title: 'نصائح الأمان',
-                    subtitle: 'استخدم البصمة أو رمز الجهاز لحماية أفضل. في حالة عدم التوفر، سيتم استخدام رمز التحقق OTP.',
+                    subtitle:
+                        'استخدم البصمة أو رمز الجهاز لحماية أفضل. في حالة عدم التوفر، سيتم استخدام رمز التحقق OTP.',
                     icon: Icons.lightbulb_outline,
                     color: AppColors.info,
                   ),
@@ -214,10 +212,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
     );
   }
 
-  Widget _buildSectionHeader({
-    required String title,
-    required IconData icon,
-  }) {
+  Widget _buildSectionHeader({required String title, required IconData icon}) {
     return Row(
       children: [
         Container(
@@ -226,11 +221,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
             gradient: AppColors.primaryGradient,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            icon,
-            color: Colors.white,
-            size: 20,
-          ),
+          child: Icon(icon, color: Colors.white, size: 20),
         ),
         const SizedBox(width: 12),
         Text(
@@ -257,8 +248,8 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
         gradient: AppColors.cardGradient,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: enabled 
-              ? AppColors.whiteTransparent20 
+          color: enabled
+              ? AppColors.whiteTransparent20
               : AppColors.whiteTransparent20.withValues(alpha: 0.5),
         ),
       ),
@@ -280,8 +271,8 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                         style: GoogleFonts.cairo(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: enabled 
-                              ? AppColors.textPrimary 
+                          color: enabled
+                              ? AppColors.textPrimary
                               : AppColors.textSecondary,
                         ),
                       ),
@@ -296,10 +287,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                     ],
                   ),
                 ),
-                if (trailing != null) ...[
-                  const SizedBox(width: 16),
-                  trailing,
-                ],
+                if (trailing != null) ...[const SizedBox(width: 16), trailing],
               ],
             ),
           ),
@@ -323,11 +311,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
       ),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: color,
-            size: 24,
-          ),
+          Icon(icon, color: color, size: 24),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -359,7 +343,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
 
   String _getAvailableBiometricsText() {
     if (_availableBiometrics.isEmpty) return 'غير متاح';
-    
+
     final names = _availableBiometrics.map((type) {
       switch (type) {
         case BiometricType.face:
@@ -372,7 +356,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
           return 'رمز الجهاز';
       }
     }).toList();
-    
+
     return names.join('، ');
   }
 }
