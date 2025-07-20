@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../widgets/app_controls.dart';
 import 'package:lottie/lottie.dart';
 import '../../utils/app_localizations.dart';
-import '../../widgets/back_button_handler.dart';
+import '../../widgets/universal_back_handler.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -93,15 +92,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   @override
   Widget build(BuildContext context) {
-    return BackButtonHandler(
-      canPop: _currentPage == 0,
-      onBackPressed: () {
-        if (_currentPage > 0) {
-          _prevPage();
-        } else {
-          SystemNavigator.pop();
-        }
-      },
+    return QuickBackHandler(
+      fallbackRoute: '/language-selection',
       child: Scaffold(
         body: Container(
           width: double.infinity,

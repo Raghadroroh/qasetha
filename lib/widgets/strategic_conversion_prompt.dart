@@ -30,10 +30,12 @@ class StrategicConversionPrompt extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<StrategicConversionPrompt> createState() => _StrategicConversionPromptState();
+  ConsumerState<StrategicConversionPrompt> createState() =>
+      _StrategicConversionPromptState();
 }
 
-class _StrategicConversionPromptState extends ConsumerState<StrategicConversionPrompt>
+class _StrategicConversionPromptState
+    extends ConsumerState<StrategicConversionPrompt>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
@@ -51,26 +53,17 @@ class _StrategicConversionPromptState extends ConsumerState<StrategicConversionP
     _scaleAnimation = Tween<double>(
       begin: 0.8,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutBack,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
     _opacityAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeIn,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
 
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.3),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutCubic,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
     _controller.forward();
   }
@@ -84,7 +77,7 @@ class _StrategicConversionPromptState extends ConsumerState<StrategicConversionP
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
-    
+
     if (!authState.isGuest) {
       return const SizedBox.shrink();
     }
@@ -264,28 +257,32 @@ class _StrategicConversionPromptState extends ConsumerState<StrategicConversionP
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              ..._getBenefits(isArabic).map((benefit) => Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.check_circle,
-                                      color: Colors.white.withOpacity(0.9),
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        benefit,
-                                        style: TextStyle(
-                                          color: Colors.white.withOpacity(0.9),
-                                          fontSize: 14,
+                              ..._getBenefits(isArabic).map(
+                                (benefit) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.check_circle,
+                                        color: Colors.white.withOpacity(0.9),
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          benefit,
+                                          style: TextStyle(
+                                            color: Colors.white.withOpacity(
+                                              0.9,
+                                            ),
+                                            fontSize: 14,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              )),
+                              ),
                             ],
                           ),
                         ),
@@ -300,7 +297,9 @@ class _StrategicConversionPromptState extends ConsumerState<StrategicConversionP
                                 onPressed: _dismiss,
                                 style: OutlinedButton.styleFrom(
                                   side: const BorderSide(color: Colors.white),
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -324,7 +323,9 @@ class _StrategicConversionPromptState extends ConsumerState<StrategicConversionP
                                   foregroundColor: isDarkMode
                                       ? const Color(0xFF2D1B69)
                                       : const Color(0xFF2E7D8A),
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -388,9 +389,13 @@ class _StrategicConversionPromptState extends ConsumerState<StrategicConversionP
   String _getTriggerSubtitle(bool isArabic) {
     switch (widget.trigger) {
       case ConversionTrigger.cartThreshold:
-        return isArabic ? 'احفظ مشترياتك إلى الأبد' : 'Save your purchases forever';
+        return isArabic
+            ? 'احفظ مشترياتك إلى الأبد'
+            : 'Save your purchases forever';
       case ConversionTrigger.wishlistThreshold:
-        return isArabic ? 'لا تفقد منتجاتك المفضلة' : 'Don\'t lose your favorites';
+        return isArabic
+            ? 'لا تفقد منتجاتك المفضلة'
+            : 'Don\'t lose your favorites';
       case ConversionTrigger.viewHistoryThreshold:
         return isArabic ? 'احفظ تاريخ تصفحك' : 'Save your browsing history';
       case ConversionTrigger.featureAccess:
@@ -405,27 +410,27 @@ class _StrategicConversionPromptState extends ConsumerState<StrategicConversionP
   String _getTriggerMessage(bool isArabic) {
     switch (widget.trigger) {
       case ConversionTrigger.cartThreshold:
-        return isArabic 
+        return isArabic
             ? 'لديك عدة منتجات في السلة! أنشئ حساب لحفظها وإتمام الشراء بسهولة.'
             : 'You have several items in your cart! Create an account to save them and complete purchases easily.';
       case ConversionTrigger.wishlistThreshold:
-        return isArabic 
+        return isArabic
             ? 'قائمة أمنياتك تحتوي على منتجات رائعة! أنشئ حساب لحفظها ومتابعة الأسعار.'
             : 'Your wishlist has great products! Create an account to save them and track prices.';
       case ConversionTrigger.viewHistoryThreshold:
-        return isArabic 
+        return isArabic
             ? 'تصفحت العديد من المنتجات! أنشئ حساب لحفظ تاريخ تصفحك والحصول على اقتراحات شخصية.'
             : 'You\'ve browsed many products! Create an account to save your history and get personalized recommendations.';
       case ConversionTrigger.featureAccess:
-        return isArabic 
+        return isArabic
             ? 'هذه الميزة متاحة للمستخدمين المسجلين فقط. أنشئ حساب للوصول إليها.'
             : 'This feature is available for registered users only. Create an account to access it.';
       case ConversionTrigger.timeSpent:
-        return isArabic 
+        return isArabic
             ? 'تقضي وقتاً ممتعاً في التطبيق! أنشئ حساب لحفظ تفضيلاتك وتحسين تجربتك.'
             : 'You\'re spending quality time in the app! Create an account to save your preferences and improve your experience.';
       case ConversionTrigger.sessionCount:
-        return isArabic 
+        return isArabic
             ? 'أنت زائر دائم! أنشئ حساب لحفظ جميع بياناتك والاستفادة من جميع الميزات.'
             : 'You\'re a regular visitor! Create an account to save all your data and enjoy all features.';
     }

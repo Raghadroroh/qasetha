@@ -18,7 +18,7 @@ import '../screens/settings/language_settings_screen.dart';
 import '../screens/onboarding/onboarding_screen.dart';
 import '../screens/language_selection_screen.dart';
 import '../screens/dashboard_screen.dart';
-import '../screens/profile_screen.dart';
+import '../screens/profile_screen_new.dart';
 import '../screens/edit_profile_screen.dart';
 import '../screens/notifications_screen.dart';
 

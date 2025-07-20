@@ -125,13 +125,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
     try {
       final authNotifier = ref.read(authStateProvider.notifier);
-      final success = await authNotifier.signInAsGuest();
+      final success = await authNotifier.signInAsGuest(context);
 
       if (!mounted) return;
 
       if (success) {
         _showSuccessSnackBar('تم تسجيل الدخول كضيف بنجاح');
-        context.go('/dashboard');
+        // Navigation is now handled in signInAsGuest method
       } else {
         final error = ref.read(authStateProvider).error;
         _showErrorSnackBar(error ?? 'حدث خطأ في تسجيل الدخول كضيف');
@@ -226,8 +226,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       icon: const Icon(Icons.arrow_back),
                       style: IconButton.styleFrom(
                         backgroundColor: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.black.withOpacity(0.3)
-                            : Colors.white.withOpacity(0.3),
+                            ? Colors.black.withValues(alpha: 0.3)
+                            : Colors.white.withValues(alpha: 0.3),
                       ),
                     ),
                   ),

@@ -7,6 +7,7 @@ import '../services/theme_service.dart';
 import '../services/user_service.dart';
 import '../providers/auth_state_provider.dart';
 import '../models/user_model.dart';
+import '../widgets/universal_back_handler.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -38,43 +39,63 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   bool _isEmployed = false;
   String _employmentSector = 'none';
   UserProfile? _userProfile;
+  bool _hasUnsavedChanges = false;
+  
+  // Original values for comparison
+  Map<String, dynamic> _originalValues = {};
   
   final UserService _userService = UserService();
   
   final List<String> _governorates = [
-    'القاهرة',
-    'الجيزة',
-    'الإسكندرية',
-    'الدقهلية',
-    'البحر الأحمر',
-    'البحيرة',
-    'الفيوم',
-    'الغربية',
-    'الإسماعيلية',
-    'المنوفية',
-    'المنيا',
-    'القليوبية',
-    'الوادي الجديد',
-    'السويس',
-    'أسوان',
-    'أسيوط',
-    'بني سويف',
-    'بورسعيد',
-    'دمياط',
-    'الشرقية',
-    'جنوب سيناء',
-    'كفر الشيخ',
-    'مطروح',
-    'الأقصر',
-    'قنا',
-    'شمال سيناء',
-    'سوهاج',
+    'عمان',
+    'الزرقاء',
+    'إربد',
+    'البلقاء',
+    'المفرق',
+    'جرش',
+    'عجلون',
+    'مأدبا',
+    'الكرك',
+    'الطفيلة',
+    'معان',
+    'العقبة',
   ];
 
   @override
   void initState() {
     super.initState();
     _loadUserProfile();
+    _setupChangeListeners();
+  }
+
+  void _setupChangeListeners() {
+    _fullNameController.addListener(_checkForChanges);
+    _phoneNumberController.addListener(_checkForChanges);
+    _streetController.addListener(_checkForChanges);
+    _cityController.addListener(_checkForChanges);
+    _governorateController.addListener(_checkForChanges);
+    _employerNameController.addListener(_checkForChanges);
+    _jobTitleController.addListener(_checkForChanges);
+  }
+
+  void _checkForChanges() {
+    if (_originalValues.isEmpty) return;
+    
+    final hasChanges = _fullNameController.text != _originalValues['fullName'] ||
+        _phoneNumberController.text != _originalValues['phoneNumber'] ||
+        _streetController.text != _originalValues['street'] ||
+        _cityController.text != _originalValues['city'] ||
+        _governorateController.text != _originalValues['governorate'] ||
+        _isEmployed != _originalValues['isEmployed'] ||
+        _employmentSector != _originalValues['employmentSector'] ||
+        _employerNameController.text != _originalValues['employerName'] ||
+        _jobTitleController.text != _originalValues['jobTitle'];
+    
+    if (hasChanges != _hasUnsavedChanges) {
+      setState(() {
+        _hasUnsavedChanges = hasChanges;
+      });
+    }
   }
 
   @override
@@ -118,6 +139,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             _employmentSector = profile.employment.sector;
             _employerNameController.text = profile.employment.employerName;
             _jobTitleController.text = profile.employment.jobTitle;
+            
+            // Store original values for comparison
+            _originalValues = {
+              'fullName': profile.fullName,
+              'phoneNumber': profile.phoneNumber,
+              'street': profile.address.street,
+              'city': profile.address.city,
+              'governorate': profile.address.governorate,
+              'isEmployed': profile.employment.isEmployed,
+              'employmentSector': profile.employment.sector,
+              'employerName': profile.employment.employerName,
+              'jobTitle': profile.employment.jobTitle,
+            };
           });
         }
       }
@@ -173,8 +207,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           final authNotifier = ref.read(authStateProvider.notifier);
           await authNotifier.checkEmailVerification();
           
+          // Reset changes flag
+          setState(() {
+            _hasUnsavedChanges = false;
+          });
+          
           // Navigate back
-          context.pop();
+          _navigateBack();
         }
       }
     } catch (e) {
@@ -262,18 +301,127 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
   }
 
+  Future<bool> _showDiscardChangesDialog() async {
+    final themeService = provider.Provider.of<ThemeService>(context, listen: false);
+    final isDarkMode = themeService.isDarkMode;
+    final isArabic = themeService.languageCode == 'ar';
+    
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.warning_rounded,
+                  color: Colors.orange,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  isArabic ? 'تجاهل التغييرات؟' : 'Discard Changes?',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode ? Colors.white : const Color(0xFF1A1A1A),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            isArabic
+                ? 'لديك تغييرات غير محفوظة. هل تريد تجاهلها والخروج؟'
+                : 'You have unsaved changes. Do you want to discard them and exit?',
+            style: TextStyle(
+              fontSize: 16,
+              color: isDarkMode ? Colors.white70 : Colors.black54,
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(
+                isArabic ? 'إلغاء' : 'Cancel',
+                style: TextStyle(
+                  color: isDarkMode ? const Color(0xFF00E5FF) : const Color(0xFF2196F3),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.orange,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(
+                  isArabic ? 'تجاهل' : 'Discard',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        );
+      },
+    ) ?? false;
+  }
+
+  Future<bool> _handleBackNavigation() async {
+    if (!_hasUnsavedChanges) {
+      return true; // Allow navigation
+    }
+    
+    return await _showDiscardChangesDialog();
+  }
+
+  void _navigateBack() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      context.go('/profile');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeService = provider.Provider.of<ThemeService>(context);
     final isDarkMode = themeService.isDarkMode;
     final isArabic = themeService.languageCode == 'ar';
 
-    return Scaffold(
-      backgroundColor: isDarkMode ? const Color(0xFF0A0A0A) : const Color(0xFFFAFAFA),
-      appBar: _buildAppBar(isDarkMode, isArabic),
-      body: _isLoading 
-          ? _buildLoadingState(isDarkMode, isArabic)
-          : _buildEditForm(isDarkMode, isArabic),
+    return UniversalBackHandler(
+      fallbackRoute: '/profile',
+      onExit: () async {
+        final canNavigate = await _handleBackNavigation();
+        if (canNavigate && mounted) {
+          _navigateBack();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: isDarkMode ? const Color(0xFF0A0A0A) : const Color(0xFFFAFAFA),
+        appBar: _buildAppBar(isDarkMode, isArabic),
+        body: _isLoading 
+            ? _buildLoadingState(isDarkMode, isArabic)
+            : _buildEditForm(isDarkMode, isArabic),
+      ),
     );
   }
 
@@ -282,7 +430,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       backgroundColor: Colors.transparent,
       elevation: 0,
       leading: IconButton(
-        onPressed: () => context.pop(),
+        onPressed: () async {
+          final canNavigate = await _handleBackNavigation();
+          if (canNavigate && mounted) {
+            _navigateBack();
+          }
+        },
         icon: Icon(
           Icons.arrow_back_ios_rounded,
           color: isDarkMode ? Colors.white : const Color(0xFF1A1A1A),
@@ -299,11 +452,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       actions: [
         if (!_isLoading)
           TextButton(
-            onPressed: _updateProfile,
+            onPressed: _hasUnsavedChanges ? _updateProfile : null,
             child: Text(
               isArabic ? 'حفظ' : 'Save',
               style: TextStyle(
-                color: isDarkMode ? const Color(0xFF00E5FF) : const Color(0xFF2196F3),
+                color: _hasUnsavedChanges 
+                    ? (isDarkMode ? const Color(0xFF00E5FF) : const Color(0xFF2196F3))
+                    : (isDarkMode ? Colors.white38 : Colors.black38),
                 fontWeight: FontWeight.w600,
                 fontSize: 16,
               ),
@@ -428,6 +583,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               onChanged: (value) {
                 setState(() {
                   _governorateController.text = value ?? '';
+                  _checkForChanges();
                 });
               },
             ),
@@ -696,6 +852,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   _employerNameController.clear();
                   _jobTitleController.clear();
                 }
+                _checkForChanges();
               });
             },
             activeColor: isDarkMode ? const Color(0xFF00E5FF) : const Color(0xFF2196F3),
@@ -724,6 +881,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       onChanged: (value) {
         setState(() {
           _employmentSector = value ?? 'none';
+          _checkForChanges();
         });
       },
     );
@@ -748,7 +906,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           ],
         ),
         child: ElevatedButton(
-          onPressed: _isLoading ? null : _updateProfile,
+          onPressed: (_isLoading || !_hasUnsavedChanges) ? null : _updateProfile,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../models/user_model.dart';
 import '../models/guest_session.dart';
 import '../services/secure_storage_service.dart';
@@ -661,7 +662,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   }
 
   // Guest authentication methods
-  Future<bool> signInAsGuest() async {
+  Future<bool> signInAsGuest([BuildContext? context]) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
       
@@ -679,6 +680,17 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
         );
         
         LoggerService.info('Guest sign in successful');
+        
+        // Navigate immediately if context is provided
+        if (context != null && context.mounted) {
+          // Add a small delay to ensure state propagation
+          await Future.delayed(const Duration(milliseconds: 100));
+          if (context.mounted) {
+            context.go('/dashboard');
+            LoggerService.info('Guest user redirected to dashboard');
+          }
+        }
+        
         return true;
       } else {
         state = state.copyWith(

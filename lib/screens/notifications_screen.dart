@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/theme_service.dart';
 import '../utils/glassmorphism.dart';
+import '../widgets/universal_back_handler.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
@@ -66,13 +67,14 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
     return Directionality(
       textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
-      child: Scaffold(
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isDarkMode
+      child: QuickBackHandler(
+        child: Scaffold(
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDarkMode
                   ? [
                       const Color(0xFF0A0E21),
                       const Color(0xFF1A1B3A),
@@ -85,16 +87,17 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                       const Color(0xFFD6E9F0),
                       const Color(0xFFBCDBEA),
                     ],
+              ),
             ),
-          ),
-          child: SafeArea(
-            child: Column(
-              children: [
-                _buildHeader(isDarkMode, isRTL),
-                Expanded(
-                  child: _buildNotificationsList(isDarkMode, isRTL),
-                ),
-              ],
+            child: SafeArea(
+              child: Column(
+                children: [
+                  _buildHeader(isDarkMode, isRTL),
+                  Expanded(
+                    child: _buildNotificationsList(isDarkMode, isRTL),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

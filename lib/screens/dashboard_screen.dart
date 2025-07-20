@@ -5,7 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../providers/auth_state_provider.dart';
 import '../widgets/guest_banner.dart';
 import '../widgets/guest_mode_indicator.dart';
-// No need for smart_back_handler import as we have global back handling
+import '../widgets/universal_back_handler.dart';
+import '../widgets/logout_confirmation_dialog.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -32,7 +33,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
 
-    return Scaffold(
+    return MainScreenBackHandler(
+      child: Scaffold(
       body: SafeArea(
         child: Column(
           children: [
@@ -60,6 +62,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
       ),
       bottomNavigationBar: _buildBottomNavigation(context, authState),
+      ),
     );
   }
 
@@ -114,6 +117,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   IconButton(
                     onPressed: () => context.go('/app-settings'),
                     icon: const Icon(Icons.settings, color: Colors.white),
+                  ),
+                  IconButton(
+                    onPressed: () => _handleLogout(context),
+                    icon: const Icon(Icons.logout, color: Colors.white),
+                    tooltip: 'تسجيل الخروج',
                   ),
                 ],
               ),
@@ -425,5 +433,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ],
       ),
     );
+  }
+
+  void _handleLogout(BuildContext context) async {
+    await QuickLogoutHelper.performQuickLogout(context, ref);
   }
 }

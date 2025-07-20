@@ -24,7 +24,8 @@
       "Bash(firebase emulators:start:*)",
       "Bash(grep:*)",
       "Bash(flutter:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(sed:*)"
     ],
     "deny": []
   }

@@ -1649,7 +1649,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       child: TextButton(
                         onPressed: () {
                           Navigator.of(context).pop();
-                          context.go('/signup');
+                          context.go('/login');
                         },
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
