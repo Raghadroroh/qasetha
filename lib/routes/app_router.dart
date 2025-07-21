@@ -12,7 +12,7 @@ import '../screens/auth/reset_password_screen.dart';
 import '../screens/auth/otp_verify_screen.dart';
 import '../screens/auth/verify_email_screen.dart';
 import '../screens/auth/verify_phone_screen.dart';
-import '../screens/settings/security_settings_screen.dart';
+// Security settings screen removed
 import '../screens/settings/app_settings_screen.dart';
 import '../screens/settings/language_settings_screen.dart';
 import '../screens/onboarding/onboarding_screen.dart';
@@ -24,11 +24,30 @@ import '../screens/notifications_screen.dart';
 
 import '../services/logger_service.dart';
 
+/// Notifier that refreshes GoRouter when auth state changes
+class GoRouterRefreshNotifier extends ChangeNotifier {
+  GoRouterRefreshNotifier(this._ref) {
+    // Listen to auth state changes and refresh router
+    _ref.listen(authStateProvider, (previous, next) {
+      // Only notify on status changes, not loading state changes
+      if (previous?.status != next.status) {
+        LoggerService.info(
+          'Auth status changed from ${previous?.status} to ${next.status}, refreshing router',
+        );
+        notifyListeners();
+      }
+    });
+  }
+
+  final Ref _ref;
+}
+
 // Router provider
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     debugLogDiagnostics: false,
     initialLocation: '/language-selection',
+    refreshListenable: GoRouterRefreshNotifier(ref),
     redirect: (context, state) async {
       try {
         LoggerService.info('Router redirect: ${state.uri.toString()}');
@@ -39,14 +58,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         final currentLocation = state.uri.toString();
 
         LoggerService.info(
-          'Auth state - isAuthenticated: $isAuthenticated, isGuest: $isGuest, isLoading: ${authState.isLoading}',
+          'Auth state - isAuthenticated: $isAuthenticated, isGuest: $isGuest, isLoading: ${authState.isLoading}, status: ${authState.status}',
         );
-
-        // If user is loading, stay on current page
-        if (authState.isLoading) {
-          LoggerService.info('Auth loading, staying on current page');
-          return null;
-        }
 
         // Routes that don't require authentication
         final publicRoutes = [
@@ -63,6 +76,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           '/verify-phone',
           '/success',
         ];
+
+        // Handle loading state more carefully
+        if (authState.isLoading) {
+          // Allow navigation to public routes during loading
+          if (publicRoutes.contains(currentLocation)) {
+            return null;
+          }
+          // For protected routes, wait for auth to complete unless explicitly unauthenticated
+          if (authState.status == AuthStatus.unauthenticated) {
+            LoggerService.info('User unauthenticated during loading, redirecting to login');
+            return '/login';
+          }
+          LoggerService.info('Auth loading, staying on current page: $currentLocation');
+          return null;
+        }
 
         // If user needs email verification
         if (authState.needsEmailVerification &&
@@ -84,15 +112,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         if ((isAuthenticated || isGuest) &&
             publicRoutes.contains(currentLocation)) {
           LoggerService.info(
-            'Authenticated/guest user on public route, redirecting to dashboard',
+            'Authenticated/guest user on public route $currentLocation, redirecting to dashboard',
           );
           return '/dashboard';
         }
 
-        // If user is not authenticated and trying to access protected route, redirect to login
-        if (!isAuthenticated && !isGuest && currentLocation == '/dashboard') {
+        // If user is not authenticated and not guest, redirect to login for protected routes
+        if (!isAuthenticated && !isGuest && !publicRoutes.contains(currentLocation)) {
           LoggerService.info(
-            'Unauthenticated user trying to access dashboard, redirecting to login',
+            'Unauthenticated user trying to access protected route $currentLocation, redirecting to login',
+          );
+          return '/login';
+        }
+
+        // If user just logged out (unauthenticated), redirect to login immediately
+        if (authState.status == AuthStatus.unauthenticated) {
+          LoggerService.info(
+            'User logged out, redirecting from $currentLocation to login',
           );
           return '/login';
         }
@@ -100,7 +136,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return null;
       } catch (e) {
         LoggerService.error('Router redirect error: $e');
-        return null;
+        return '/login'; // Safer fallback
       }
     },
     routes: [
@@ -233,15 +269,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // Settings routes
       GoRoute(
-        path: '/security-settings',
-        pageBuilder: (context, state) => _buildModernPage(
-          key: state.pageKey,
-          child: const SecuritySettingsScreen(),
-          transitionType: TransitionType.slideFromRight,
-        ),
-      ),
-
-      GoRoute(
         path: '/app-settings',
         pageBuilder: (context, state) => _buildModernPage(
           key: state.pageKey,
@@ -341,8 +368,8 @@ CustomTransitionPage _buildModernPage({
         child,
       );
     },
-    transitionDuration: const Duration(milliseconds: 400),
-    reverseTransitionDuration: const Duration(milliseconds: 300),
+    transitionDuration: const Duration(milliseconds: 250),
+    reverseTransitionDuration: const Duration(milliseconds: 200),
   );
 }
 
@@ -362,13 +389,13 @@ Widget _getTransition(
 
     case TransitionType.fadeScale:
       return FadeTransition(
-        opacity: animation.drive(CurveTween(curve: Curves.easeInOutCubic)),
+        opacity: animation.drive(CurveTween(curve: Curves.easeInOutQuart)),
         child: ScaleTransition(
           scale: animation.drive(
             Tween(
-              begin: 0.8,
+              begin: 0.9,
               end: 1.0,
-            ).chain(CurveTween(curve: Curves.easeOutBack)),
+            ).chain(CurveTween(curve: Curves.easeOutCubic)),
           ),
           child: child,
         ),
@@ -380,10 +407,10 @@ Widget _getTransition(
           Tween(
             begin: const Offset(1.0, 0.0),
             end: Offset.zero,
-          ).chain(CurveTween(curve: Curves.easeOutCubic)),
+          ).chain(CurveTween(curve: Curves.easeOutQuart)),
         ),
         child: FadeTransition(
-          opacity: animation.drive(CurveTween(curve: Curves.easeIn)),
+          opacity: animation.drive(CurveTween(curve: Curves.easeInQuad)),
           child: child,
         ),
       );
@@ -394,10 +421,10 @@ Widget _getTransition(
           Tween(
             begin: const Offset(-1.0, 0.0),
             end: Offset.zero,
-          ).chain(CurveTween(curve: Curves.easeOutCubic)),
+          ).chain(CurveTween(curve: Curves.easeOutQuart)),
         ),
         child: FadeTransition(
-          opacity: animation.drive(CurveTween(curve: Curves.easeIn)),
+          opacity: animation.drive(CurveTween(curve: Curves.easeInQuad)),
           child: child,
         ),
       );
@@ -406,12 +433,12 @@ Widget _getTransition(
       return SlideTransition(
         position: animation.drive(
           Tween(
-            begin: const Offset(0.0, 1.0),
+            begin: const Offset(0.0, 0.3),
             end: Offset.zero,
-          ).chain(CurveTween(curve: Curves.easeOutCubic)),
+          ).chain(CurveTween(curve: Curves.easeOutQuart)),
         ),
         child: FadeTransition(
-          opacity: animation.drive(CurveTween(curve: Curves.easeIn)),
+          opacity: animation.drive(CurveTween(curve: Curves.easeInQuad)),
           child: child,
         ),
       );
@@ -434,19 +461,19 @@ Widget _getTransition(
       return ScaleTransition(
         scale: animation.drive(
           Tween(
-            begin: 0.0,
+            begin: 0.8,
             end: 1.0,
-          ).chain(CurveTween(curve: Curves.elasticOut)),
+          ).chain(CurveTween(curve: Curves.easeOutBack)),
         ),
         child: RotationTransition(
           turns: animation.drive(
             Tween(
-              begin: 0.1,
+              begin: 0.05,
               end: 0.0,
-            ).chain(CurveTween(curve: Curves.easeOut)),
+            ).chain(CurveTween(curve: Curves.easeOutQuad)),
           ),
           child: FadeTransition(
-            opacity: animation.drive(CurveTween(curve: Curves.easeIn)),
+            opacity: animation.drive(CurveTween(curve: Curves.easeInQuad)),
             child: child,
           ),
         ),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_strings.dart';
-import '../../services/biometric_auth_service.dart';
+// import '../../services/biometric_auth_service.dart'; // File removed
 import '../../services/otp_service.dart';
 
 class TransactionSecurityScreen extends StatefulWidget {
@@ -25,13 +25,11 @@ class TransactionSecurityScreen extends StatefulWidget {
 }
 
 class _TransactionSecurityScreenState extends State<TransactionSecurityScreen> {
-  final _biometricService = BiometricAuthService();
+  // Biometric service removed
   final _otpService = OTPService();
   final _otpController = TextEditingController();
 
   bool _isLoading = false;
-  bool _biometricAvailable = false;
-  bool _showOtpInput = false;
   bool _otpSent = false;
   int _remainingSeconds = 0;
 
@@ -48,47 +46,13 @@ class _TransactionSecurityScreenState extends State<TransactionSecurityScreen> {
   }
 
   Future<void> _checkSecurityOptions() async {
-    final isAvailable = await _biometricService.isBiometricAvailable();
-    final isEnabled = await _biometricService.isBiometricEnabled();
-
-    setState(() {
-      _biometricAvailable = isAvailable && isEnabled;
-    });
-
-    if (!_biometricAvailable) {
-      setState(() => _showOtpInput = true);
-    }
+    // Biometric is no longer available - directly show OTP option
+    // No state changes needed since biometric options are removed
   }
 
-  Future<void> _authenticateWithBiometric() async {
-    setState(() => _isLoading = true);
+  // Biometric authentication removed
 
-    try {
-      final result = await _biometricService.authenticateForTransaction(
-        transactionType: widget.transactionType,
-      );
-
-      if (result.isSuccess) {
-        _showSnackBar(AppStrings.transactionSecured);
-        widget.onSuccess();
-      } else if (result == BiometricAuthResult.cancelled) {
-        // لا تظهر رسالة عند الإلغاء
-      } else if (result.shouldShowFallback) {
-        _showFallbackOptions();
-      } else {
-        _showSnackBar(result.message, isError: true);
-      }
-    } catch (e) {
-      _showSnackBar(AppStrings.error, isError: true);
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  void _showFallbackOptions() {
-    setState(() => _showOtpInput = true);
-    _showSnackBar(AppStrings.fallbackToOtp);
-  }
+  // Removed _showFallbackOptions - no longer needed
 
   Future<void> _sendOtpEmail() async {
     setState(() => _isLoading = true);
@@ -255,13 +219,8 @@ class _TransactionSecurityScreenState extends State<TransactionSecurityScreen> {
 
                 const SizedBox(height: 32),
 
-                if (_biometricAvailable && !_showOtpInput) ...[
-                  _buildBiometricButton(),
-                  const SizedBox(height: 16),
-                  _buildFallbackButton(),
-                ] else if (_showOtpInput) ...[
-                  _buildOtpSection(),
-                ],
+                // Always show OTP section
+                _buildOtpSection(),
 
                 const Spacer(),
 
@@ -283,57 +242,7 @@ class _TransactionSecurityScreenState extends State<TransactionSecurityScreen> {
     );
   }
 
-  Widget _buildBiometricButton() {
-    return Container(
-      height: 60,
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: ElevatedButton.icon(
-        onPressed: _isLoading ? null : _authenticateWithBiometric,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        icon: _isLoading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
-            : const Icon(Icons.fingerprint, color: Colors.white),
-        label: Text(
-          AppStrings.useBiometric,
-          style: GoogleFonts.cairo(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFallbackButton() {
-    return TextButton(
-      onPressed: () => setState(() => _showOtpInput = true),
-      child: Text(
-        AppStrings.otpFallback,
-        style: GoogleFonts.cairo(
-          color: AppColors.primary,
-          fontSize: 16,
-          decoration: TextDecoration.underline,
-        ),
-      ),
-    );
-  }
+  // Biometric buttons removed
 
   Widget _buildOtpSection() {
     return Column(

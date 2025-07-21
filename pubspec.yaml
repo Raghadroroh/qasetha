@@ -24,7 +24,7 @@ dependencies:
   go_router: ^16.0.0
   google_fonts: ^6.2.1
   logger: ^2.4.0
-  local_auth: ^2.3.0
+  # local_auth removed
   shared_preferences: ^2.3.3
   provider: ^6.1.2
   flutter_riverpod: ^2.5.1

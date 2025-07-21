@@ -319,7 +319,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: Colors.orange.withValues(alpha: 0.1),
+                  color: Colors.orange.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
@@ -651,7 +651,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF2196F3).withValues(alpha: 0.3),
+                  color: const Color(0xFF2196F3).withOpacity(0.3),
                   blurRadius: 20,
                   offset: const Offset(0, 5),
                 ),
@@ -675,7 +675,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF2196F3).withValues(alpha: 0.5),
+                    color: const Color(0xFF2196F3).withOpacity(0.5),
                     blurRadius: 10,
                   ),
                 ],
@@ -732,18 +732,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         ),
         filled: true,
         fillColor: isDarkMode
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.black.withValues(alpha: 0.03),
+            ? Colors.white.withOpacity(0.05)
+            : Colors.black.withOpacity(0.03),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(
-            color: isDarkMode ? Colors.white.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.1),
+            color: isDarkMode ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.1),
           ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(
-            color: isDarkMode ? Colors.white.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.1),
+            color: isDarkMode ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.1),
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -756,7 +756,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         disabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(
-            color: isDarkMode ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
+            color: isDarkMode ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
           ),
         ),
       ),
@@ -784,18 +784,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         ),
         filled: true,
         fillColor: isDarkMode
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.black.withValues(alpha: 0.03),
+            ? Colors.white.withOpacity(0.05)
+            : Colors.black.withOpacity(0.03),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(
-            color: isDarkMode ? Colors.white.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.1),
+            color: isDarkMode ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.1),
           ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(
-            color: isDarkMode ? Colors.white.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.1),
+            color: isDarkMode ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.1),
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -823,7 +823,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDarkMode ? Colors.white.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.1),
+          color: isDarkMode ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.1),
         ),
       ),
       child: Row(
@@ -899,7 +899,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF2196F3).withValues(alpha: 0.4),
+              color: const Color(0xFF2196F3).withOpacity(0.4),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),

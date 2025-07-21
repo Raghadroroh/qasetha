@@ -270,7 +270,7 @@ class Address {
     required this.street,
     required this.city,
     required this.governorate,
-    required this.postalCode,
+    this.postalCode = '',
   });
 
   Map<String, dynamic> toMap() {

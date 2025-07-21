@@ -26,15 +26,17 @@ class GuestService {
         // Create guest session asynchronously to avoid blocking
         final guestSession = GuestSession.create();
         
-        // Save session in background
-        unawaited(_saveGuestSession(guestSession));
+        // Save session immediately to ensure it's available for navigation
+        await _saveGuestSession(guestSession);
         
         // Log analytics in background
-        unawaited(_logGuestAnalytics('guest_signin', {
+        _logGuestAnalytics('guest_signin', {
           'user_id': user.uid,
           'timestamp': DateTime.now().toIso8601String(),
           'session_id': guestSession.id,
-        }));
+        }).catchError((e) {
+          LoggerService.error('Failed to log guest analytics: $e');
+        });
         
         LoggerService.info('Anonymous sign in successful: ${user.uid}');
         

@@ -34,7 +34,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -42,38 +42,67 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   bool _isLoading = false;
   bool _obscurePassword = true;
 
-  late AnimationController _glowController;
-  late AnimationController _waveController;
-  late Animation<double> _glowAnimation;
-  late Animation<double> _waveAnimation;
+  AnimationController? _glowController;
+  AnimationController? _waveController;
+  Animation<double>? _glowAnimation;
+  Animation<double>? _waveAnimation;
+  
+  bool _animationsStarted = false;
+  Widget? _cachedWaveBackground;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
+    // Defer animation initialization to improve initial performance
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeAnimations();
+    });
+  }
+
+  void _initializeAnimations() {
+    if (_animationsStarted || !mounted) return;
+    
     _glowController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
-    )..repeat(reverse: true);
+    );
 
     _waveController = AnimationController(
       duration: const Duration(seconds: 3),
       vsync: this,
-    )..repeat();
+    );
 
     _glowAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
-      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
+      CurvedAnimation(parent: _glowController!, curve: Curves.easeInOut),
     );
 
     _waveAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(parent: _waveController, curve: Curves.linear));
+    ).animate(CurvedAnimation(parent: _waveController!, curve: Curves.linear));
+
+    // Only start animations when visible
+    _startAnimations();
+    _animationsStarted = true;
   }
+
+  void _startAnimations() {
+    if (_glowController?.isAnimating != true) {
+      _glowController?.repeat(reverse: true);
+    }
+    if (_waveController?.isAnimating != true) {
+      _waveController?.repeat();
+    }
+  }
+
 
   @override
   void dispose() {
-    _glowController.dispose();
-    _waveController.dispose();
+    _glowController?.dispose();
+    _waveController?.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -104,7 +133,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
       if (success) {
         _showSuccessSnackBar('تم تسجيل الدخول بنجاح');
-        context.go('/dashboard');
+        
+        // Small delay to ensure state propagation
+        await Future.delayed(const Duration(milliseconds: 200));
+        
+        if (mounted) {
+          // Force navigation to dashboard
+          context.go('/dashboard');
+        }
       } else {
         final error = ref.read(authStateProvider).error;
         _showErrorSnackBar(error ?? 'حدث خطأ في تسجيل الدخول');
@@ -124,14 +160,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     setState(() => _isLoading = true);
 
     try {
+      print('🔵 Starting guest login...');
       final authNotifier = ref.read(authStateProvider.notifier);
       final success = await authNotifier.signInAsGuest(context);
 
       if (!mounted) return;
 
+      print('🔵 Guest login result: $success');
       if (success) {
         _showSuccessSnackBar('تم تسجيل الدخول كضيف بنجاح');
-        // Navigation is now handled in signInAsGuest method
+        
+        // Wait for state to update
+        await Future.delayed(const Duration(milliseconds: 200));
+        
+        if (mounted) {
+          // Force navigation to dashboard to ensure immediate redirect
+          context.go('/dashboard');
+          print('🔵 Navigated to dashboard after guest login');
+        }
       } else {
         final error = ref.read(authStateProvider).error;
         _showErrorSnackBar(error ?? 'حدث خطأ في تسجيل الدخول كضيف');
@@ -174,8 +220,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     );
   }
 
+  Widget _buildOptimizedWaveBackground(bool isDarkMode) {
+    if (_waveAnimation == null) return const SizedBox();
+    
+    return _cachedWaveBackground ??= RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _waveAnimation!,
+        builder: (context, child) {
+          return CustomPaint(
+            painter: OptimizedWavePainter(_waveAnimation!.value, isDarkMode),
+            size: Size.infinite,
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    
     return provider.Consumer<ThemeService>(
       builder: (context, themeService, child) {
         final isDarkMode = themeService.isDarkMode;
@@ -183,7 +247,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
         return Scaffold(
           body: AnimatedContainer(
-            duration: const Duration(milliseconds: 800),
+            duration: const Duration(milliseconds: 400), // Reduced duration
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -206,16 +270,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             child: SafeArea(
               child: Stack(
                 children: [
-                  // Animated Wave Background
-                  AnimatedBuilder(
-                    animation: _waveAnimation,
-                    builder: (context, child) {
-                      return CustomPaint(
-                        painter: WavePainter(_waveAnimation.value, isDarkMode),
-                        size: Size.infinite,
-                      );
-                    },
-                  ),
+                  // Optimized Wave Background
+                  _buildOptimizedWaveBackground(isDarkMode),
 
                   // Back Button
                   Positioned(
@@ -239,9 +295,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   Center(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.all(24),
-                      child: AnimatedBuilder(
-                        animation: _glowAnimation,
-                        builder: (context, child) {
+                      child: _glowAnimation != null 
+                        ? AnimatedBuilder(
+                            animation: _glowAnimation!,
+                            builder: (context, child) {
                           return Container(
                             padding: const EdgeInsets.all(32),
                             decoration: BoxDecoration(
@@ -262,10 +319,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               border: Border.all(
                                 color: isDarkMode
                                     ? OceanColors.neonCyan.withValues(alpha: 
-                                        0.3 * _glowAnimation.value,
+                                        0.3 * _glowAnimation!.value,
                                       )
                                     : OceanColors.oceanBlue.withValues(alpha: 
-                                        0.3 * _glowAnimation.value,
+                                        0.3 * _glowAnimation!.value,
                                       ),
                                 width: 2,
                               ),
@@ -273,10 +330,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 BoxShadow(
                                   color: isDarkMode
                                       ? OceanColors.neonCyan.withValues(alpha: 
-                                          0.2 * _glowAnimation.value,
+                                          0.2 * _glowAnimation!.value,
                                         )
                                       : OceanColors.oceanBlue.withValues(alpha: 
-                                          0.2 * _glowAnimation.value,
+                                          0.2 * _glowAnimation!.value,
                                         ),
                                   blurRadius: 30,
                                   spreadRadius: 10,
@@ -393,10 +450,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                               : OceanColors.oceanBlue
                                                     .withValues(alpha: 0.8),
                                         ),
-                                        onPressed: () => setState(
-                                          () => _obscurePassword =
-                                              !_obscurePassword,
-                                        ),
+                                        onPressed: () {
+                                          setState(() => _obscurePassword = !_obscurePassword);
+                                        },
                                       ),
                                     ),
 
@@ -514,7 +570,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             ),
                           );
                         },
-                      ),
+                      )
+                      : _buildStaticLoginForm(isDarkMode, isArabic),
                     ),
                   ),
                 ],
@@ -527,8 +584,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   Widget _buildGlassLogo(bool isDarkMode) {
+    if (_glowAnimation == null) {
+      return _buildStaticLogo(isDarkMode);
+    }
+    
     return AnimatedBuilder(
-      animation: _glowAnimation,
+      animation: _glowAnimation!,
       builder: (context, child) {
         return Container(
           width: 80,
@@ -550,9 +611,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             ),
             border: Border.all(
               color: isDarkMode
-                  ? OceanColors.neonCyan.withValues(alpha: 0.5 * _glowAnimation.value)
+                  ? OceanColors.neonCyan.withValues(alpha: 0.5 * _glowAnimation!.value)
                   : OceanColors.oceanBlue.withValues(alpha: 
-                      0.5 * _glowAnimation.value,
+                      0.5 * _glowAnimation!.value,
                     ),
               width: 2,
             ),
@@ -560,10 +621,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               BoxShadow(
                 color: isDarkMode
                     ? OceanColors.neonCyan.withValues(alpha: 
-                        0.3 * _glowAnimation.value,
+                        0.3 * _glowAnimation!.value,
                       )
                     : OceanColors.oceanBlue.withValues(alpha: 
-                        0.3 * _glowAnimation.value,
+                        0.3 * _glowAnimation!.value,
                       ),
                 blurRadius: 20,
                 spreadRadius: 5,
@@ -744,8 +805,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   Widget _buildGlassSubmitButton(bool isDarkMode, bool isArabic) {
+    if (_glowAnimation == null) {
+      return _buildStaticSubmitButton(isDarkMode, isArabic);
+    }
+    
     return AnimatedBuilder(
-      animation: _glowAnimation,
+      animation: _glowAnimation!,
       builder: (context, child) {
         return Container(
           width: double.infinity,
@@ -765,10 +830,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             border: Border.all(
               color: isDarkMode
                   ? OceanColors.neonCyan.withValues(alpha: 
-                      _isLoading ? 0.3 : 0.5 * _glowAnimation.value,
+                      _isLoading ? 0.3 : 0.5 * (_glowAnimation?.value ?? 0.5),
                     )
                   : OceanColors.oceanBlue.withValues(alpha: 
-                      _isLoading ? 0.3 : 0.5 * _glowAnimation.value,
+                      _isLoading ? 0.3 : 0.5 * (_glowAnimation?.value ?? 0.5),
                     ),
               width: 2,
             ),
@@ -778,10 +843,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     BoxShadow(
                       color: isDarkMode
                           ? OceanColors.neonCyan.withValues(alpha: 
-                              0.5 * _glowAnimation.value,
+                              0.5 * (_glowAnimation?.value ?? 0.5),
                             )
                           : OceanColors.oceanBlue.withValues(alpha: 
-                              0.5 * _glowAnimation.value,
+                              0.5 * (_glowAnimation?.value ?? 0.5),
                             ),
                       blurRadius: 20,
                       spreadRadius: 5,
@@ -887,11 +952,65 @@ class WavePainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
+class OptimizedWavePainter extends CustomPainter {
+  final double animationValue;
+  final bool isDarkMode;
+  
+  OptimizedWavePainter(this.animationValue, this.isDarkMode);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = isDarkMode 
+          ? OceanColors.neonCyan.withValues(alpha: 0.05)
+          : OceanColors.oceanBlue.withValues(alpha: 0.1);
+
+    final path = Path();
+    final waveHeight = size.height * 0.2;
+    
+    // Simplified wave calculation
+    path.moveTo(0, size.height * 0.7);
+    
+    // Use fewer control points for better performance
+    final points = [
+      Offset(size.width * 0.25, size.height * 0.7 - waveHeight * math.sin(animationValue * 2 * math.pi)),
+      Offset(size.width * 0.5, size.height * 0.7 + waveHeight * math.sin(animationValue * 2 * math.pi + math.pi / 2)),
+      Offset(size.width * 0.75, size.height * 0.7 - waveHeight * math.sin(animationValue * 2 * math.pi + math.pi)),
+      Offset(size.width, size.height * 0.7 + waveHeight * math.sin(animationValue * 2 * math.pi + 3 * math.pi / 2)),
+    ];
+    
+    for (int i = 0; i < points.length - 1; i++) {
+      final p1 = points[i];
+      final p2 = points[i + 1];
+      final cp = Offset((p1.dx + p2.dx) / 2, (p1.dy + p2.dy) / 2);
+      path.quadraticBezierTo(p1.dx, p1.dy, cp.dx, cp.dy);
+    }
+    
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(OptimizedWavePainter oldDelegate) {
+    return oldDelegate.animationValue != animationValue || 
+           oldDelegate.isDarkMode != isDarkMode;
+  }
+}
+
 extension on _LoginScreenState {
   Widget _buildGuestLoginButton(bool isDarkMode, bool isArabic) {
-    return AnimatedBuilder(
-      animation: _glowAnimation,
-      builder: (context, child) {
+    if (_glowAnimation == null) {
+      return _buildStaticGuestButton(isDarkMode, isArabic);
+    }
+    
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _glowAnimation!,
+        builder: (context, child) {
         return Container(
           width: double.infinity,
           height: 56,
@@ -912,15 +1031,15 @@ extension on _LoginScreenState {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isDarkMode
-                  ? Colors.white.withValues(alpha: 0.3 * _glowAnimation.value)
-                  : OceanColors.deepOcean.withValues(alpha: 0.3 * _glowAnimation.value),
+                  ? Colors.white.withValues(alpha: 0.3 * _glowAnimation!.value)
+                  : OceanColors.deepOcean.withValues(alpha: 0.3 * _glowAnimation!.value),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
                 color: isDarkMode
-                    ? Colors.white.withValues(alpha: 0.1 * _glowAnimation.value)
-                    : OceanColors.deepOcean.withValues(alpha: 0.1 * _glowAnimation.value),
+                    ? Colors.white.withValues(alpha: 0.1 * _glowAnimation!.value)
+                    : OceanColors.deepOcean.withValues(alpha: 0.1 * _glowAnimation!.value),
                 blurRadius: 10,
                 spreadRadius: 1,
               ),
@@ -971,7 +1090,372 @@ extension on _LoginScreenState {
                   ),
           ),
         );
-      },
+        },
+      ),
+    );
+  }
+  
+  Widget _buildStaticGuestButton(bool isDarkMode, bool isArabic) {
+    return Container(
+      width: double.infinity,
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDarkMode
+              ? [
+                  Colors.white.withValues(alpha: 0.1),
+                  Colors.white.withValues(alpha: 0.05),
+                ]
+              : [
+                  Colors.white.withValues(alpha: 0.3),
+                  Colors.white.withValues(alpha: 0.1),
+                ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDarkMode
+              ? Colors.white.withValues(alpha: 0.2)
+              : OceanColors.deepOcean.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _handleGuestLogin,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: _isLoading
+            ? SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    isDarkMode ? Colors.white : OceanColors.deepOcean,
+                  ),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.person_outline,
+                    size: 20,
+                    color: isDarkMode
+                        ? Colors.white.withValues(alpha: 0.8)
+                        : OceanColors.deepOcean.withValues(alpha: 0.8),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    isArabic ? 'متابعة كضيف' : 'Continue as Guest',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: isDarkMode
+                          ? Colors.white.withValues(alpha: 0.8)
+                          : OceanColors.deepOcean.withValues(alpha: 0.8),
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildStaticLoginForm(bool isDarkMode, bool isArabic) {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDarkMode
+              ? [
+                  Colors.white.withValues(alpha: 0.1),
+                  Colors.white.withValues(alpha: 0.05),
+                ]
+              : [
+                  Colors.white.withValues(alpha: 0.3),
+                  Colors.white.withValues(alpha: 0.1),
+                ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDarkMode
+              ? OceanColors.neonCyan.withValues(alpha: 0.3)
+              : OceanColors.oceanBlue.withValues(alpha: 0.3),
+          width: 2,
+        ),
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Static Logo
+            _buildStaticLogo(isDarkMode),
+            const SizedBox(height: 32),
+
+            // Title
+            Text(
+              isArabic ? 'أهلاً بك مرة أخرى' : 'Welcome Back',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: isDarkMode ? Colors.white : OceanColors.deepOcean,
+              ),
+              textAlign: TextAlign.center,
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              isArabic ? 'سجل دخولك للمتابعة' : 'Sign in to continue',
+              style: TextStyle(
+                fontSize: 16,
+                color: isDarkMode
+                    ? Colors.white.withValues(alpha: 0.8)
+                    : OceanColors.deepOcean.withValues(alpha: 0.8),
+              ),
+              textAlign: TextAlign.center,
+            ),
+
+            const SizedBox(height: 40),
+
+            // Mode Toggle
+            _buildGlassModeToggle(isDarkMode, isArabic),
+
+            const SizedBox(height: 32),
+
+            // Email/Phone Field
+            _buildGlassField(
+              controller: _emailController,
+              hint: _isEmailMode
+                  ? (isArabic ? 'البريد الإلكتروني' : 'Email')
+                  : '+962',
+              icon: _isEmailMode ? Icons.email_outlined : Icons.phone_outlined,
+              keyboardType: _isEmailMode
+                  ? TextInputType.emailAddress
+                  : TextInputType.phone,
+              validator: _isEmailMode
+                  ? (value) => Validators.validateEmail(value)
+                  : (value) => Validators.validatePhone(value),
+              isDarkMode: isDarkMode,
+            ),
+
+            const SizedBox(height: 20),
+
+            // Password Field (Email mode only)
+            if (_isEmailMode) ...[
+              _buildGlassField(
+                controller: _passwordController,
+                hint: isArabic ? 'كلمة المرور' : 'Password',
+                icon: Icons.lock_outline,
+                obscureText: _obscurePassword,
+                validator: (value) => Validators.validatePassword(value),
+                isDarkMode: isDarkMode,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    color: isDarkMode
+                        ? OceanColors.neonCyan.withValues(alpha: 0.8)
+                        : OceanColors.oceanBlue.withValues(alpha: 0.8),
+                  ),
+                  onPressed: () {
+                    setState(() => _obscurePassword = !_obscurePassword);
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Forgot Password
+              Align(
+                alignment: isArabic ? Alignment.centerRight : Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: () => context.push('/forgot-password'),
+                  child: Text(
+                    isArabic ? 'نسيت كلمة المرور؟' : 'Forgot Password?',
+                    style: TextStyle(
+                      color: isDarkMode
+                          ? OceanColors.neonCyan.withValues(alpha: 0.8)
+                          : OceanColors.oceanBlue.withValues(alpha: 0.8),
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 32),
+
+            // Static Login Button
+            _buildStaticSubmitButton(isDarkMode, isArabic),
+
+            const SizedBox(height: 24),
+
+            // Guest Login Button
+            _buildGuestLoginButton(isDarkMode, isArabic),
+
+            const SizedBox(height: 16),
+
+            // OR Divider
+            Row(
+              children: [
+                Expanded(
+                  child: Divider(
+                    color: isDarkMode
+                        ? Colors.white.withValues(alpha: 0.3)
+                        : OceanColors.deepOcean.withValues(alpha: 0.3),
+                    thickness: 1,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    isArabic ? 'أو' : 'OR',
+                    style: TextStyle(
+                      color: isDarkMode
+                          ? Colors.white.withValues(alpha: 0.6)
+                          : OceanColors.deepOcean.withValues(alpha: 0.6),
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Divider(
+                    color: isDarkMode
+                        ? Colors.white.withValues(alpha: 0.3)
+                        : OceanColors.deepOcean.withValues(alpha: 0.3),
+                    thickness: 1,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // Sign Up Link
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  isArabic ? 'ليس لديك حساب؟ ' : "Don't have an account? ",
+                  style: TextStyle(
+                    color: isDarkMode
+                        ? Colors.white.withValues(alpha: 0.8)
+                        : OceanColors.deepOcean.withValues(alpha: 0.8),
+                    fontSize: 14,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => context.push('/signup'),
+                  child: Text(
+                    isArabic ? 'إنشاء حساب جديد' : 'Sign Up',
+                    style: TextStyle(
+                      color: isDarkMode ? OceanColors.neonCyan : OceanColors.oceanBlue,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStaticLogo(bool isDarkMode) {
+    return Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDarkMode
+              ? [
+                  Colors.white.withValues(alpha: 0.1),
+                  Colors.white.withValues(alpha: 0.05),
+                ]
+              : [
+                  Colors.white.withValues(alpha: 0.3),
+                  Colors.white.withValues(alpha: 0.1),
+                ],
+        ),
+        border: Border.all(
+          color: isDarkMode
+              ? OceanColors.neonCyan.withValues(alpha: 0.3)
+              : OceanColors.oceanBlue.withValues(alpha: 0.3),
+          width: 2,
+        ),
+      ),
+      child: Icon(
+        Icons.account_balance_wallet_outlined,
+        size: 40,
+        color: isDarkMode ? OceanColors.neonCyan : OceanColors.oceanBlue,
+      ),
+    );
+  }
+
+  Widget _buildStaticSubmitButton(bool isDarkMode, bool isArabic) {
+    return Container(
+      width: double.infinity,
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDarkMode
+              ? [OceanColors.neonCyan, OceanColors.darkAccent]
+              : [OceanColors.oceanBlue, OceanColors.deepOcean],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDarkMode
+              ? OceanColors.neonCyan.withValues(alpha: 0.3)
+              : OceanColors.oceanBlue.withValues(alpha: 0.3),
+          width: 2,
+        ),
+      ),
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _handleLogin,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: _isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Text(
+                _isEmailMode
+                    ? (isArabic ? 'تسجيل الدخول' : 'Sign In')
+                    : (isArabic ? 'متابعة' : 'Continue'),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+      ),
     );
   }
 }

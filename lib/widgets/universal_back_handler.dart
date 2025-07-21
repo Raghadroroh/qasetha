@@ -9,7 +9,7 @@ class UniversalBackHandler extends StatefulWidget {
   final Widget child;
   final bool isMainScreen;  // للشاشات الرئيسية (dashboard)
   final String? fallbackRoute;  // الروت البديل إذا لم يكن هناك صفحة سابقة
-  final VoidCallback? onExit;  // دالة مخصصة للخروج
+  final Future<void> Function()? onExit;  // دالة مخصصة للخروج
   final bool showExitDialog;  // عرض تأكيد الخروج
   final bool preventExit;  // منع الخروج من التطبيق
   final bool enableDoubleTap;  // تفعيل الضغط المزدوج للخروج
@@ -49,6 +49,12 @@ class _UniversalBackHandlerState extends State<UniversalBackHandler> {
   /// معالجة التنقل للخلف بشكل ذكي
   Future<void> _handleBackNavigation(BuildContext context) async {
     if (!context.mounted) return;
+    
+    // إذا كان هناك دالة onExit مخصصة، استخدمها
+    if (widget.onExit != null) {
+      await widget.onExit!();
+      return;
+    }
     
     // إذا كانت شاشة رئيسية ومُعدة لمنع الخروج
     if (widget.isMainScreen && widget.preventExit) {
@@ -161,11 +167,7 @@ class _UniversalBackHandlerState extends State<UniversalBackHandler> {
 
   /// الخروج من التطبيق
   void _exitApp() {
-    if (widget.onExit != null) {
-      widget.onExit!();
-    } else {
-      SystemNavigator.pop();
-    }
+    SystemNavigator.pop();
   }
 
   /// محاولة الرجوع باستخدام الطرق المختلفة
@@ -290,17 +292,20 @@ class _UniversalBackHandlerState extends State<UniversalBackHandler> {
 class QuickBackHandler extends StatelessWidget {
   final Widget child;
   final String? fallbackRoute;
+  final Future<void> Function()? onExit;
 
   const QuickBackHandler({
     super.key,
     required this.child,
     this.fallbackRoute = '/dashboard',
+    this.onExit,
   });
 
   @override
   Widget build(BuildContext context) {
     return UniversalBackHandler(
       fallbackRoute: fallbackRoute,
+      onExit: onExit,
       child: child,
     );
   }

@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../utils/app_localizations.dart';
 import '../../widgets/app_controls.dart';
 import '../../widgets/logout_confirmation_dialog.dart';
-import '../../providers/auth_state_provider.dart';
 import '../../widgets/universal_back_handler.dart';
 
 class AppSettingsScreen extends ConsumerWidget {

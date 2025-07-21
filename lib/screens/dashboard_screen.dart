@@ -6,7 +6,7 @@ import '../providers/auth_state_provider.dart';
 import '../widgets/guest_banner.dart';
 import '../widgets/guest_mode_indicator.dart';
 import '../widgets/universal_back_handler.dart';
-import '../widgets/logout_confirmation_dialog.dart';
+import '../services/logout_service.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -15,58 +15,139 @@ class DashboardScreen extends ConsumerStatefulWidget {
   ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+class _DashboardScreenState extends ConsumerState<DashboardScreen>
+    with AutomaticKeepAliveClientMixin {
+  
+  // Cache widgets to avoid rebuilding expensive components
+  Widget? _cachedQuickActions;
+  Widget? _cachedRecentActivity;
+  String? _lastGreeting;
+  DateTime? _lastGreetingUpdate;
+  
+  @override
+  bool get wantKeepAlive => true;
+
   @override
   void initState() {
     super.initState();
-    _trackPageVisit();
+    // Defer tracking to next frame to avoid blocking UI
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _trackPageVisit();
+    });
   }
 
-  void _trackPageVisit() async {
-    final authState = ref.read(authStateProvider);
-    if (authState.isGuest) {
-      await ref.read(authStateProvider.notifier).trackGuestPageVisit('dashboard');
+  Future<void> _trackPageVisit() async {
+    try {
+      final authState = ref.read(authStateProvider);
+      if (authState.isGuest) {
+        await ref.read(authStateProvider.notifier).trackGuestPageVisit('dashboard');
+      }
+    } catch (e) {
+      // Silently handle tracking errors to avoid affecting UI
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authStateProvider);
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    
+    // Use selectors to minimize rebuilds
+    final shouldShowGuestBanner = ref.watch(
+      authStateProvider.select((state) => state.shouldShowGuestBanner)
+    );
+    final isGuest = ref.watch(
+      authStateProvider.select((state) => state.isGuest)
+    );
+    final user = ref.watch(
+      authStateProvider.select((state) => state.user)
+    );
+    final guestSession = ref.watch(
+      authStateProvider.select((state) => state.guestSession)
+    );
 
     return MainScreenBackHandler(
       child: Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Guest banner if in guest mode
-            if (authState.shouldShowGuestBanner) const GuestBanner(),
-            
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(context, authState),
-                    const SizedBox(height: 24),
-                    _buildQuickActions(context, authState),
-                    const SizedBox(height: 24),
-                    _buildRecentActivity(context),
-                    const SizedBox(height: 24),
-                    _buildAnalytics(context, authState),
-                  ],
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Guest banner if in guest mode
+              if (shouldShowGuestBanner) const GuestBanner(),
+              
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: _refreshData,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildOptimizedHeader(context, isGuest, user),
+                        const SizedBox(height: 24),
+                        _getQuickActions(context),
+                        const SizedBox(height: 24),
+                        _getRecentActivity(context),
+                        const SizedBox(height: 24),
+                        if (isGuest) _buildAnalytics(context, guestSession),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-      bottomNavigationBar: _buildBottomNavigation(context, authState),
+        bottomNavigationBar: _buildOptimizedBottomNavigation(context, isGuest),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, AuthState authState) {
+  Future<void> _refreshData() async {
+    // Clear cached widgets on refresh
+    setState(() {
+      _cachedQuickActions = null;
+      _cachedRecentActivity = null;
+      _lastGreeting = null;
+    });
+    
+    // Refresh data
+    await _trackPageVisit();
+  }
+  
+  Widget _getQuickActions(BuildContext context) {
+    return _cachedQuickActions ??= _buildQuickActions(context);
+  }
+  
+  Widget _getRecentActivity(BuildContext context) {
+    return _cachedRecentActivity ??= _buildRecentActivity(context);
+  }
+  
+  String _getOptimizedGreeting() {
+    final now = DateTime.now();
+    
+    // Cache greeting for 1 hour to avoid frequent DateTime calls
+    if (_lastGreeting != null && 
+        _lastGreetingUpdate != null &&
+        now.difference(_lastGreetingUpdate!).inHours < 1) {
+      return _lastGreeting!;
+    }
+    
+    final hour = now.hour;
+    String greeting;
+    if (hour < 12) {
+      greeting = 'صباح الخير';
+    } else if (hour < 17) {
+      greeting = 'مساء الخير';
+    } else {
+      greeting = 'مساء الخير';
+    }
+    
+    _lastGreeting = greeting;
+    _lastGreetingUpdate = now;
+    return greeting;
+  }
+
+  Widget _buildOptimizedHeader(BuildContext context, bool isGuest, dynamic user) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -90,7 +171,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _getGreeting(),
+                    _getOptimizedGreeting(),
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -98,32 +179,34 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    authState.isGuest 
+                    isGuest 
                         ? 'ضيف' 
-                        : authState.user?.name ?? 'مستخدم',
+                        : user?.name ?? 'مستخدم',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Colors.white70,
                     ),
                   ),
                 ],
               ),
-              Row(
-                children: [
-                  if (authState.isGuest) const GuestModeIndicator(),
-                  IconButton(
-                    onPressed: () => context.go('/profile'),
-                    icon: const Icon(Icons.person, color: Colors.white),
-                  ),
-                  IconButton(
-                    onPressed: () => context.go('/app-settings'),
-                    icon: const Icon(Icons.settings, color: Colors.white),
-                  ),
-                  IconButton(
-                    onPressed: () => _handleLogout(context),
-                    icon: const Icon(Icons.logout, color: Colors.white),
-                    tooltip: 'تسجيل الخروج',
-                  ),
-                ],
+              RepaintBoundary(
+                child: Row(
+                  children: [
+                    if (isGuest) const GuestModeIndicator(),
+                    IconButton(
+                      onPressed: () => context.go('/profile'),
+                      icon: const Icon(Icons.person, color: Colors.white),
+                    ),
+                    IconButton(
+                      onPressed: () => context.go('/app-settings'),
+                      icon: const Icon(Icons.settings, color: Colors.white),
+                    ),
+                    IconButton(
+                      onPressed: () => _handleLogout(context),
+                      icon: const Icon(Icons.logout, color: Colors.white),
+                      tooltip: 'تسجيل الخروج',
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -132,8 +215,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildQuickActions(BuildContext context, AuthState authState) {
-    return Column(
+  Widget _buildQuickActions(BuildContext context) {
+    return RepaintBoundary(
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
@@ -184,6 +268,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ),
       ],
+      ),
     );
   }
 
@@ -194,7 +279,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     required String subtitle,
     required VoidCallback onTap,
   }) {
-    return Card(
+    return RepaintBoundary(
+      child: Card(
       elevation: 2,
       child: InkWell(
         onTap: onTap,
@@ -229,11 +315,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ),
       ),
+      ),
     );
   }
 
   Widget _buildRecentActivity(BuildContext context) {
-    return Column(
+    return RepaintBoundary(
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
@@ -266,6 +354,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ),
       ],
+      ),
     );
   }
 
@@ -283,10 +372,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildAnalytics(BuildContext context, AuthState authState) {
-    if (!authState.isGuest) return const SizedBox.shrink();
-
-    return Column(
+  Widget _buildAnalytics(BuildContext context, dynamic guestSession) {
+    return RepaintBoundary(
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
@@ -304,21 +392,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 _buildStatItem(
                   context,
                   title: 'الميزات المستخدمة',
-                  value: '${authState.guestSession?.featuresUsed.length ?? 0}',
+                  value: '${guestSession?.featuresUsed.length ?? 0}',
                   icon: Icons.star,
                 ),
                 const SizedBox(height: 12),
                 _buildStatItem(
                   context,
                   title: 'الصفحات المزارة',
-                  value: '${authState.guestSession?.pageVisitCount.length ?? 0}',
+                  value: '${guestSession?.pageVisitCount.length ?? 0}',
                   icon: Icons.pageview,
                 ),
                 const SizedBox(height: 12),
                 _buildStatItem(
                   context,
                   title: 'مدة الجلسة',
-                  value: _getSessionDuration(authState.guestSession?.createdAt),
+                  value: _getSessionDuration(guestSession?.createdAt),
                   icon: Icons.timer,
                 ),
               ],
@@ -326,6 +414,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ),
       ],
+      ),
     );
   }
 
@@ -353,57 +442,53 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildBottomNavigation(BuildContext context, AuthState authState) {
-    return BottomNavigationBar(
-      type: BottomNavigationBarType.fixed,
-      currentIndex: 0, // Dashboard is selected
-      items: [
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.dashboard),
-          label: 'لوحة التحكم',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(authState.isGuest ? Icons.person_outline : Icons.person),
-          label: 'الملف الشخصي',
-        ),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.notifications),
-          label: 'الإشعارات',
-        ),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.settings),
-          label: 'الإعدادات',
-        ),
-      ],
-      onTap: (index) {
-        switch (index) {
-          case 0:
-            // Already on dashboard
-            break;
-          case 1:
-            context.go('/profile');
-            break;
-          case 2:
-            context.go('/notifications');
-            break;
-          case 3:
-            context.go('/app-settings');
-            break;
-        }
-      },
+  Widget _buildOptimizedBottomNavigation(BuildContext context, bool isGuest) {
+    return RepaintBoundary(
+      child: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        currentIndex: 0, // Dashboard is selected
+        items: [
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: 'لوحة التحكم',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(isGuest ? Icons.person_outline : Icons.person),
+            label: 'الملف الشخصي',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.notifications),
+            label: 'الإشعارات',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'الإعدادات',
+          ),
+        ],
+        onTap: _handleBottomNavTap,
+      ),
     );
   }
-
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) {
-      return 'صباح الخير';
-    } else if (hour < 17) {
-      return 'مساء الخير';
-    } else {
-      return 'مساء الخير';
+  
+  void _handleBottomNavTap(int index) {
+    if (!mounted) return;
+    
+    switch (index) {
+      case 0:
+        // Already on dashboard
+        break;
+      case 1:
+        context.go('/profile');
+        break;
+      case 2:
+        context.go('/notifications');
+        break;
+      case 3:
+        context.go('/app-settings');
+        break;
     }
   }
+
 
   String _getFormattedDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
@@ -436,6 +521,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   void _handleLogout(BuildContext context) async {
-    await QuickLogoutHelper.performQuickLogout(context, ref);
+    if (!mounted) return;
+    await LogoutService.showLogoutConfirmationAndPerform(context, ref);
   }
 }

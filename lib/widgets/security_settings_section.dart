@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
-import '../services/biometric_auth_service.dart';
+// import '../services/biometric_auth_service.dart'; // File removed
 import '../utils/theme.dart';
 
 class SecuritySettingsSection extends StatefulWidget {
@@ -14,8 +14,7 @@ class SecuritySettingsSection extends StatefulWidget {
 }
 
 class _SecuritySettingsSectionState extends State<SecuritySettingsSection> {
-  final BiometricAuthService _biometricService = BiometricAuthService();
-  bool _biometricEnabled = false;
+  // Biometric service removed
   bool _notificationsEnabled = true;
   bool _twoFactorEnabled = false;
 
@@ -29,44 +28,12 @@ class _SecuritySettingsSectionState extends State<SecuritySettingsSection> {
     // Load current settings from preferences or API
     // This is a placeholder - implement actual loading logic
     setState(() {
-      _biometricEnabled = false; // Load from preferences
       _notificationsEnabled = true;
       _twoFactorEnabled = false;
     });
   }
 
-  Future<void> _toggleBiometric(bool enabled) async {
-    if (enabled) {
-      final isAvailable = await _biometricService.isBiometricAvailable();
-      if (!isAvailable) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Biometric authentication not available on this device',
-              ),
-            ),
-          );
-        }
-        return;
-      }
-
-      final authResult = await _biometricService.authenticateUser(
-        reason: 'Enable biometric authentication for your account',
-      );
-      if (authResult.isSuccess) {
-        setState(() {
-          _biometricEnabled = true;
-        });
-        // Save to preferences
-      }
-    } else {
-      setState(() {
-        _biometricEnabled = false;
-      });
-      // Save to preferences
-    }
-  }
+  // Removed _toggleBiometric - biometric functionality is no longer available
 
   @override
   Widget build(BuildContext context) {
@@ -124,19 +91,7 @@ class _SecuritySettingsSectionState extends State<SecuritySettingsSection> {
             ),
             const SizedBox(height: 16),
 
-            _buildSecurityTile(
-              'Biometric Login',
-              'Use fingerprint or face recognition',
-              Icons.fingerprint,
-              colors.statusSuccess,
-              () => _toggleBiometric(!_biometricEnabled),
-              trailing: Switch(
-                value: _biometricEnabled,
-                onChanged: _toggleBiometric,
-                activeColor: colors.primary,
-              ),
-            ),
-            const SizedBox(height: 16),
+            // Biometric login option removed
 
             _buildSecurityTile(
               'Login History',

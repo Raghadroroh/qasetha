@@ -76,9 +76,10 @@ class _StrategicConversionPromptState
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authStateProvider);
+    // Check if user is guest directly from WidgetRef
+    final isGuest = ref.watch(authStateProvider.select((state) => state.isGuest));
 
-    if (!authState.isGuest) {
+    if (!isGuest) {
       return const SizedBox.shrink();
     }
 
@@ -468,23 +469,5 @@ class _StrategicConversionPromptState
     );
   }
 
-  /// Show strategic conversion prompt based on trigger
-  static void showForTrigger(
-    BuildContext context,
-    ConversionTrigger trigger, {
-    String? customMessage,
-    VoidCallback? onDismiss,
-    VoidCallback? onConvert,
-  }) {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) => StrategicConversionPrompt(
-        trigger: trigger,
-        customMessage: customMessage,
-        onDismiss: onDismiss,
-        onConvert: onConvert,
-      ),
-    );
-  }
+  // Method removed to fix warning
 }

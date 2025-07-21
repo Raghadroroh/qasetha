@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import '../models/user_model.dart';
 import '../models/guest_session.dart';
 import '../services/secure_storage_service.dart';
@@ -97,33 +96,38 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   Future<void> _initialize() async {
     try {
       state = state.copyWith(isLoading: true);
+
+      // Check Firebase Auth state first (Firebase is the source of truth)
+      final currentUser = FirebaseAuth.instance.currentUser;
       
-      // Check if user has valid session
-      final hasValidSession = await SecureStorageService.hasValidSession();
-      final isWithinAutoLoginPeriod = await SecureStorageService.isWithinAutoLoginPeriod();
-      
-      if (hasValidSession && isWithinAutoLoginPeriod) {
-        // Restore user session
-        await _restoreUserSession();
-      } else {
-        // Clear expired session
-        await SecureStorageService.clearAuthData();
-        
-        // Check for guest session
-        await _initializeGuestSession();
-        
-        // If no guest session, set to unauthenticated
-        if (state.status == AuthStatus.initial) {
-          state = state.copyWith(
-            status: AuthStatus.unauthenticated,
-            isLoading: false,
-          );
+      if (currentUser != null) {
+        if (currentUser.isAnonymous) {
+          // Guest user - restore guest session
+          await _initializeGuestSession();
+        } else {
+          // Registered user - check if has valid local session
+          final hasValidSession = await SecureStorageService.hasValidSession();
+          final isWithinAutoLoginPeriod = await SecureStorageService.isWithinAutoLoginPeriod();
+          
+          if (hasValidSession && isWithinAutoLoginPeriod) {
+            await _restoreUserSession();
+          } else {
+            // Update user from Firebase
+            _updateUserFromFirebase(currentUser);
+          }
         }
+      } else {
+        // No Firebase user - clear any local data and set unauthenticated
+        await SecureStorageService.clearAuthData();
+        state = state.copyWith(
+          status: AuthStatus.unauthenticated,
+          isLoading: false,
+        );
       }
-      
+
       // Listen to Firebase auth state changes
       FirebaseAuth.instance.authStateChanges().listen(_onAuthStateChanged);
-      
+
       // Cleanup expired guest sessions
       await GuestService.cleanupExpiredGuestSessions();
     } catch (e) {
@@ -142,7 +146,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       final userData = await SecureStorageService.getUserData();
       final sessionExpiry = await SecureStorageService.getSessionExpiry();
       final biometricEnabled = await SecureStorageService.isBiometricEnabled();
-      
+
       if (userData['userId'] != null) {
         final user = UserModel(
           id: userData['userId']!,
@@ -154,7 +158,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
           createdAt: DateTime.now(), // Will be updated from Firestore if needed
           lastLogin: DateTime.now(),
         );
-        
+
         state = state.copyWith(
           status: AuthStatus.authenticated,
           user: user,
@@ -162,7 +166,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
           biometricEnabled: biometricEnabled,
           isLoading: false,
         );
-        
+
         LoggerService.info('User session restored successfully');
       }
     } catch (e) {
@@ -202,7 +206,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       createdAt: firebaseUser.metadata.creationTime ?? DateTime.now(),
       lastLogin: DateTime.now(),
     );
-    
+
     state = state.copyWith(
       status: AuthStatus.authenticated,
       user: user,
@@ -220,14 +224,14 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   }) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
-      
+
       final result = await AuthService.signUpWithEmail(
         email: email,
         password: password,
         name: name,
         context: context,
       );
-      
+
       if (result.isSuccess) {
         final user = UserModel(
           id: result.user!.uid,
@@ -238,22 +242,22 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
           createdAt: DateTime.now(),
           lastLogin: DateTime.now(),
         );
-        
+
         await _saveUserSession(user);
-        
-        final newStatus = result.user!.emailVerified 
-            ? AuthStatus.authenticated 
+
+        final newStatus = result.user!.emailVerified
+            ? AuthStatus.authenticated
             : AuthStatus.emailNotVerified;
-            
+
         LoggerService.info('Setting auth status to: $newStatus');
-        
+
         state = state.copyWith(
           status: newStatus,
           user: user,
           isLoading: false,
           error: null, // Clear any previous errors
         );
-        
+
         LoggerService.info('Auth state updated successfully');
         return true;
       } else {
@@ -284,13 +288,13 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   }) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
-      
+
       final result = await AuthService.signInWithEmail(
         email: email,
         password: password,
         context: context,
       );
-      
+
       if (result.isSuccess) {
         final user = UserModel(
           id: result.user!.uid,
@@ -301,17 +305,17 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
           createdAt: result.user!.metadata.creationTime ?? DateTime.now(),
           lastLogin: DateTime.now(),
         );
-        
+
         await _saveUserSession(user);
-        
+
         state = state.copyWith(
-          status: result.user!.emailVerified 
-              ? AuthStatus.authenticated 
+          status: result.user!.emailVerified
+              ? AuthStatus.authenticated
               : AuthStatus.emailNotVerified,
           user: user,
           isLoading: false,
         );
-        
+
         return true;
       } else {
         state = state.copyWith(
@@ -339,7 +343,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   }) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
-      
+
       final result = await AuthService.verifyPhoneNumber(
         phoneNumber: phoneNumber,
         onCodeSent: (verificationId) {
@@ -369,7 +373,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
         },
         context: context,
       );
-      
+
       return result.isSuccess;
     } catch (e) {
       LoggerService.error('Send OTP error: $e');
@@ -397,16 +401,16 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
         );
         return false;
       }
-      
+
       state = state.copyWith(isLoading: true, error: null);
-      
+
       final result = await AuthService.verifyOTP(
         verificationId: state.verificationId!,
         smsCode: smsCode,
         name: name,
         context: context,
       );
-      
+
       if (result.isSuccess) {
         await _handlePhoneVerificationSuccess(result.user!);
         return true;
@@ -441,9 +445,9 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       createdAt: firebaseUser.metadata.creationTime ?? DateTime.now(),
       lastLogin: DateTime.now(),
     );
-    
+
     await _saveUserSession(user);
-    
+
     state = state.copyWith(
       status: AuthStatus.authenticated,
       user: user,
@@ -460,7 +464,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       if (idToken != null) {
         await SecureStorageService.saveAuthToken(idToken);
       }
-      
+
       // Save user data
       await SecureStorageService.saveUserData(
         userId: user.id,
@@ -468,11 +472,11 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
         phone: user.phone,
         name: user.name,
       );
-      
+
       // Save session expiry (30 days from now)
       final sessionExpiry = DateTime.now().add(const Duration(days: 30));
       await SecureStorageService.saveSessionExpiry(sessionExpiry);
-      
+
       LoggerService.info('User session saved successfully');
     } catch (e) {
       LoggerService.error('Failed to save user session: $e');
@@ -483,9 +487,9 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   Future<bool> sendEmailVerification({BuildContext? context}) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
-      
+
       final result = await AuthService.sendEmailVerification(context: context);
-      
+
       if (result.isSuccess) {
         state = state.copyWith(isLoading: false);
         return true;
@@ -513,14 +517,11 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     try {
       await AuthService.reloadUser();
       final currentUser = FirebaseAuth.instance.currentUser;
-      
+
       if (currentUser != null && currentUser.emailVerified) {
         final user = state.user?.copyWith(emailVerified: true);
-        state = state.copyWith(
-          status: AuthStatus.authenticated,
-          user: user,
-        );
-        
+        state = state.copyWith(status: AuthStatus.authenticated, user: user);
+
         if (user != null) {
           await _saveUserSession(user);
         }
@@ -537,12 +538,12 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   }) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
-      
+
       final result = await AuthService.sendPasswordResetEmail(
         email: email,
         context: context,
       );
-      
+
       if (result.isSuccess) {
         state = state.copyWith(isLoading: false);
         return true;
@@ -572,12 +573,12 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   }) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
-      
+
       final result = await AuthService.updatePassword(
         newPassword: newPassword,
         context: context,
       );
-      
+
       if (result.isSuccess) {
         state = state.copyWith(isLoading: false);
         return true;
@@ -605,7 +606,9 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     try {
       await SecureStorageService.setBiometricEnabled(enabled);
       state = state.copyWith(biometricEnabled: enabled);
-      LoggerService.info('Biometric authentication ${enabled ? 'enabled' : 'disabled'}');
+      LoggerService.info(
+        'Biometric authentication ${enabled ? 'enabled' : 'disabled'}',
+      );
     } catch (e) {
       LoggerService.error('Failed to toggle biometric: $e');
     }
@@ -620,17 +623,19 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   Future<void> signOut() async {
     try {
       state = state.copyWith(isLoading: true);
-      
+
       // Handle guest mode cleanup
       if (state.isGuest) {
         await GuestService.clearGuestSession();
       }
-      
-      await AuthService.signOut();
-      await SecureStorageService.clearAuthData();
-      
+
+      // Set state to unauthenticated first to trigger router redirect
       state = const AuthState(status: AuthStatus.unauthenticated);
       
+      // Then perform actual signout operations
+      await AuthService.signOut();
+      await SecureStorageService.clearAuthData();
+
       LoggerService.info('User signed out successfully');
     } catch (e) {
       LoggerService.error('Sign out error: $e');
@@ -649,12 +654,12 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       if (state.isGuest) {
         await GuestService.clearGuestSession();
       }
-      
+
       await AuthService.signOut();
       await SecureStorageService.clearAllData();
-      
+
       state = const AuthState(status: AuthStatus.unauthenticated);
-      
+
       LoggerService.info('User forced logout successfully');
     } catch (e) {
       LoggerService.error('Force logout error: $e');
@@ -665,32 +670,41 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   Future<bool> signInAsGuest([BuildContext? context]) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
-      
+
       final result = await GuestService.signInAnonymously();
-      
+
       if (result.isSuccess) {
         final guestSession = await GuestService.getCurrentGuestSession();
-        
-        state = state.copyWith(
-          status: AuthStatus.guest,
-          isGuestMode: true,
-          guestSession: guestSession,
-          isLoading: false,
-          error: null,
-        );
-        
-        LoggerService.info('Guest sign in successful');
-        
-        // Navigate immediately if context is provided
-        if (context != null && context.mounted) {
-          // Add a small delay to ensure state propagation
-          await Future.delayed(const Duration(milliseconds: 100));
-          if (context.mounted) {
-            context.go('/dashboard');
-            LoggerService.info('Guest user redirected to dashboard');
-          }
+
+        // Ensure guestSession is available before updating state
+        if (guestSession != null) {
+          // Update state first with loading false to ensure router can process
+          state = state.copyWith(
+            status: AuthStatus.guest,
+            isGuestMode: true,
+            guestSession: guestSession,
+            isLoading: false,
+            error: null,
+          );
+        } else {
+          // Fallback: create a basic guest session if none exists
+          final fallbackSession = GuestSession.create();
+          await GuestService.updateGuestSession(fallbackSession);
+
+          state = state.copyWith(
+            status: AuthStatus.guest,
+            isGuestMode: true,
+            guestSession: fallbackSession,
+            isLoading: false,
+            error: null,
+          );
         }
-        
+
+        LoggerService.info('Guest sign in successful, state updated');
+        print(
+          '🟢 Guest state updated - Status: ${state.status}, isGuest: ${state.isGuest}, isLoading: ${state.isLoading}',
+        );
+
         return true;
       } else {
         state = state.copyWith(
@@ -720,13 +734,13 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   }) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
-      
+
       final result = await GuestService.convertGuestToRegistered(
         email: email,
         password: password,
         name: name,
       );
-      
+
       if (result.isSuccess) {
         final user = UserModel(
           id: result.user!.uid,
@@ -737,12 +751,12 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
           createdAt: DateTime.now(),
           lastLogin: DateTime.now(),
         );
-        
+
         await _saveUserSession(user);
-        
+
         state = state.copyWith(
-          status: result.user!.emailVerified 
-              ? AuthStatus.authenticated 
+          status: result.user!.emailVerified
+              ? AuthStatus.authenticated
               : AuthStatus.emailNotVerified,
           user: user,
           isGuestMode: false,
@@ -750,7 +764,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
           isLoading: false,
           error: null,
         );
-        
+
         LoggerService.info('Guest to registered conversion successful');
         return true;
       } else {
@@ -857,7 +871,9 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
             status: AuthStatus.guest,
             isGuestMode: true,
             guestSession: guestSession,
+            isLoading: false,
           );
+          LoggerService.info('Guest session restored successfully');
         }
       }
     } catch (e) {
@@ -867,7 +883,9 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
 }
 
 // Auth state provider
-final authStateProvider = StateNotifierProvider<AuthStateNotifier, AuthState>((ref) {
+final authStateProvider = StateNotifierProvider<AuthStateNotifier, AuthState>((
+  ref,
+) {
   return AuthStateNotifier();
 });
 

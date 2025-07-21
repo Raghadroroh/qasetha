@@ -87,25 +87,7 @@ class AppStrings {
   static const String dontHaveAccount = 'ليس لديك حساب؟';
   static const String alreadyHaveAccount = 'لديك حساب بالفعل؟';
 
-  static const String enableQuickLogin = 'فعّل الدخول السريع';
-  static const String quickLoginPrompt =
-      'فعّل الدخول السريع عبر البصمة أو الوجه أو رمز الجهاز';
-  static const String biometricLogin = 'الدخول بالبصمة';
-  static const String fingerprintLogin = 'الدخول بالبصمة';
-  static const String faceIdLogin = 'الدخول بالوجه';
-  static const String devicePinLogin = 'الدخول برمز الجهاز';
   static const String usePassword = 'استخدام كلمة المرور';
-  static const String useBiometric = 'استخدام البصمة';
-  static const String biometricNotAvailable = 'البصمة غير متاحة';
-  static const String biometricNotSetup = 'لم يتم إعداد البصمة على الجهاز';
-  static const String enableBiometricInSettings =
-      'يمكنك تفعيلها من إعدادات التطبيق';
-  static const String skipBiometricSetup = 'تخطي الآن';
-  static const String enableBiometric = 'تفعيل البصمة';
-  static const String biometricEnabled = 'تم تفعيل الدخول السريع';
-  static const String biometricFailed = 'فشل في التحقق من البصمة';
-  static const String biometricCancelled = 'تم إلغاء التحقق من البصمة';
-  static const String biometricUnavailable = 'البصمة غير متاحة على هذا الجهاز';
   static const String fallbackToOtp =
       'يمكنك الحماية عبر رمز التحقق/OTP عند العمليات المالية';
 
@@ -127,8 +109,6 @@ class AppStrings {
   static const String otpVerificationFailed = 'فشل في التحقق من الرمز';
 
   static const String securitySettings = 'إعدادات الأمان';
-  static const String manageBiometric = 'إدارة البصمة';
-  static const String biometricStatus = 'حالة البصمة';
   static const String enabled = 'مفعل';
   static const String disabled = 'معطل';
 

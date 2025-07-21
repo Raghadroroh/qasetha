@@ -132,6 +132,18 @@ class UserService {
       throw Exception('Failed to update user profile: $e');
     }
   }
+  
+  // Update user profile with UserProfile object
+  Future<void> updateUserProfileObject(UserProfile profile) async {
+    try {
+      final data = profile.toMap();
+      data['updatedAt'] = FieldValue.serverTimestamp();
+      
+      await _firestore.collection(_usersCollection).doc(profile.userId).update(data);
+    } catch (e) {
+      throw Exception('Failed to update user profile: $e');
+    }
+  }
 
   // Create user profile
   Future<void> createUserProfile(UserProfile userProfile) async {

@@ -30,14 +30,24 @@ class _CountdownTimerState extends State<CountdownTimer> {
   }
 
   void _startTimer() {
+    _timer?.cancel(); // Ensure no previous timer is running
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      
       if (_remainingSeconds > 0) {
-        setState(() {
-          _remainingSeconds--;
-        });
+        if (mounted) {
+          setState(() {
+            _remainingSeconds--;
+          });
+        }
       } else {
         timer.cancel();
-        widget.onComplete();
+        if (mounted) {
+          widget.onComplete();
+        }
       }
     });
   }
@@ -45,6 +55,7 @@ class _CountdownTimerState extends State<CountdownTimer> {
   @override
   void dispose() {
     _timer?.cancel();
+    _timer = null;
     super.dispose();
   }
 

@@ -119,7 +119,7 @@ class _OTPVerifyScreenState extends State<OTPVerifyScreen>
       }
 
       final name = widget.data['name'] as String?;
-      
+
       final result = await FirebaseAuthService.verifyOTP(
         verificationId: verificationId,
         smsCode: otpCode,
@@ -170,7 +170,7 @@ class _OTPVerifyScreenState extends State<OTPVerifyScreen>
         _showErrorSnackBar('رقم الهاتف غير متوفر');
         return;
       }
-      
+
       String? newVerificationId;
       final result = await FirebaseAuthService.sendOTP(
         phoneNumber: phoneNumber,
@@ -313,22 +313,22 @@ class _OTPVerifyScreenState extends State<OTPVerifyScreen>
                               borderRadius: BorderRadius.circular(24),
                               border: Border.all(
                                 color: isDarkMode
-                                    ? OceanColors.neonCyan.withValues(alpha: 
-                                        0.3 * _glowAnimation.value,
+                                    ? OceanColors.neonCyan.withValues(
+                                        alpha: 0.3 * _glowAnimation.value,
                                       )
-                                    : OceanColors.oceanBlue.withValues(alpha: 
-                                        0.3 * _glowAnimation.value,
+                                    : OceanColors.oceanBlue.withValues(
+                                        alpha: 0.3 * _glowAnimation.value,
                                       ),
                                 width: 2,
                               ),
                               boxShadow: [
                                 BoxShadow(
                                   color: isDarkMode
-                                      ? OceanColors.neonCyan.withValues(alpha: 
-                                          0.2 * _glowAnimation.value,
+                                      ? OceanColors.neonCyan.withValues(
+                                          alpha: 0.2 * _glowAnimation.value,
                                         )
-                                      : OceanColors.oceanBlue.withValues(alpha: 
-                                          0.2 * _glowAnimation.value,
+                                      : OceanColors.oceanBlue.withValues(
+                                          alpha: 0.2 * _glowAnimation.value,
                                         ),
                                   blurRadius: 30,
                                   spreadRadius: 10,
@@ -373,8 +373,8 @@ class _OTPVerifyScreenState extends State<OTPVerifyScreen>
                                     fontSize: 16,
                                     color: isDarkMode
                                         ? Colors.white.withValues(alpha: 0.7)
-                                        : OceanColors.deepOcean.withValues(alpha: 
-                                            0.7,
+                                        : OceanColors.deepOcean.withValues(
+                                            alpha: 0.7,
                                           ),
                                   ),
                                   textAlign: TextAlign.center,
@@ -474,20 +474,22 @@ class _OTPVerifyScreenState extends State<OTPVerifyScreen>
             ),
             border: Border.all(
               color: isDarkMode
-                  ? OceanColors.neonCyan.withValues(alpha: 0.5 * _glowAnimation.value)
-                  : OceanColors.oceanBlue.withValues(alpha: 
-                      0.5 * _glowAnimation.value,
+                  ? OceanColors.neonCyan.withValues(
+                      alpha: 0.5 * _glowAnimation.value,
+                    )
+                  : OceanColors.oceanBlue.withValues(
+                      alpha: 0.5 * _glowAnimation.value,
                     ),
               width: 2,
             ),
             boxShadow: [
               BoxShadow(
                 color: isDarkMode
-                    ? OceanColors.neonCyan.withValues(alpha: 
-                        0.3 * _glowAnimation.value,
+                    ? OceanColors.neonCyan.withValues(
+                        alpha: 0.3 * _glowAnimation.value,
                       )
-                    : OceanColors.oceanBlue.withValues(alpha: 
-                        0.3 * _glowAnimation.value,
+                    : OceanColors.oceanBlue.withValues(
+                        alpha: 0.3 * _glowAnimation.value,
                       ),
                 blurRadius: 20,
                 spreadRadius: 5,
@@ -511,8 +513,14 @@ class _OTPVerifyScreenState extends State<OTPVerifyScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isDarkMode
-              ? [Colors.white.withValues(alpha: 0.1), Colors.white.withValues(alpha: 0.05)]
-              : [Colors.white.withValues(alpha: 0.3), Colors.white.withValues(alpha: 0.1)],
+              ? [
+                  Colors.white.withValues(alpha: 0.1),
+                  Colors.white.withValues(alpha: 0.05),
+                ]
+              : [
+                  Colors.white.withValues(alpha: 0.3),
+                  Colors.white.withValues(alpha: 0.1),
+                ],
         ),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
@@ -571,11 +579,11 @@ class _OTPVerifyScreenState extends State<OTPVerifyScreen>
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isDarkMode
-                  ? OceanColors.neonCyan.withValues(alpha: 
-                      _isLoading ? 0.3 : 0.5 * _glowAnimation.value,
+                  ? OceanColors.neonCyan.withValues(
+                      alpha: _isLoading ? 0.3 : 0.5 * _glowAnimation.value,
                     )
-                  : OceanColors.oceanBlue.withValues(alpha: 
-                      _isLoading ? 0.3 : 0.5 * _glowAnimation.value,
+                  : OceanColors.oceanBlue.withValues(
+                      alpha: _isLoading ? 0.3 : 0.5 * _glowAnimation.value,
                     ),
               width: 2,
             ),
@@ -584,11 +592,11 @@ class _OTPVerifyScreenState extends State<OTPVerifyScreen>
                 : [
                     BoxShadow(
                       color: isDarkMode
-                          ? OceanColors.neonCyan.withValues(alpha: 
-                              0.5 * _glowAnimation.value,
+                          ? OceanColors.neonCyan.withValues(
+                              alpha: 0.5 * _glowAnimation.value,
                             )
-                          : OceanColors.oceanBlue.withValues(alpha: 
-                              0.5 * _glowAnimation.value,
+                          : OceanColors.oceanBlue.withValues(
+                              alpha: 0.5 * _glowAnimation.value,
                             ),
                       blurRadius: 20,
                       spreadRadius: 5,
