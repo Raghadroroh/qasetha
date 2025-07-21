@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/auth_state_provider.dart';
+import '../models/category.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
 import '../screens/auth/phone_login_screen.dart';
@@ -18,6 +19,8 @@ import '../screens/settings/language_settings_screen.dart';
 import '../screens/onboarding/onboarding_screen.dart';
 import '../screens/language_selection_screen.dart';
 import '../screens/dashboard_screen.dart';
+import '../screens/subcategory_screen.dart';
+import '../screens/product_list_screen.dart';
 import '../screens/profile_screen_new.dart';
 import '../screens/edit_profile_screen.dart';
 import '../screens/notifications_screen.dart';
@@ -304,6 +307,39 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           child: const NotificationsScreen(),
           transitionType: TransitionType.slideFromRight,
         ),
+      ),
+
+      // Category and Product routes
+      GoRoute(
+        path: '/subcategories/:categoryId',
+        pageBuilder: (context, state) {
+          final categoryId = state.pathParameters['categoryId']!;
+          final category = state.extra as Category?;
+          return _buildModernPage(
+            key: state.pageKey,
+            child: SubcategoryScreen(
+              parentCategoryId: categoryId,
+              parentCategory: category,
+            ),
+            transitionType: TransitionType.slideFromRight,
+          );
+        },
+      ),
+
+      GoRoute(
+        path: '/products/category/:categoryId',
+        pageBuilder: (context, state) {
+          final categoryId = state.pathParameters['categoryId']!;
+          final category = state.extra as Category?;
+          return _buildModernPage(
+            key: state.pageKey,
+            child: ProductListScreen(
+              categoryId: categoryId,
+              category: category,
+            ),
+            transitionType: TransitionType.slideFromRight,
+          );
+        },
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

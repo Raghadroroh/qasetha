@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/logout_service.dart';
-import '../providers/auth_state_provider.dart';
 
 /// Legacy wrapper for the new LogoutService
 /// Use LogoutService directly for new implementations

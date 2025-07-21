@@ -1,0 +1,1080 @@
+{
+  "categories": {
+    "products": {
+      "home-furniture": {
+        "id": "home-furniture",
+        "name": "المنزل والأثاث",
+        "nameEn": "Home & Furniture",
+        "icon": "🏠",
+        "description": "أثاث وديكورات منزلية بأحدث التصاميم",
+        "type": "products",
+        "order": 1,
+        "isActive": true,
+        "subcategories": {
+          "bedroom": {
+            "id": "bedroom",
+            "name": "أثاث غرف النوم",
+            "nameEn": "Bedroom Furniture",
+            "icon": "🛏️",
+            "description": "أسرة وخزائن وتسريحات عصرية",
+            "order": 1
+          },
+          "living-room": {
+            "id": "living-room",
+            "name": "أثاث غرف المعيشة",
+            "nameEn": "Living Room Furniture",
+            "icon": "🛋️",
+            "description": "كنب وطاولات ومكتبات أنيقة",
+            "order": 2
+          },
+          "kitchen-dining": {
+            "id": "kitchen-dining",
+            "name": "أثاث المطبخ وغرف الطعام",
+            "nameEn": "Kitchen & Dining Furniture",
+            "icon": "🍽️",
+            "description": "طاولات وكراسي وخزائن مطبخ",
+            "order": 3
+          },
+          "decor": {
+            "id": "decor",
+            "name": "الديكور والإكسسوارات",
+            "nameEn": "Decor & Accessories",
+            "icon": "🎨",
+            "description": "ستائر وسجاد ولوحات ديكورية",
+            "order": 4
+          }
+        }
+      },
+      "electronics": {
+        "id": "electronics",
+        "name": "الإلكترونيات والتكنولوجيا",
+        "nameEn": "Electronics & Technology",
+        "icon": "📱",
+        "description": "أحدث الأجهزة الإلكترونية والتقنية",
+        "type": "products",
+        "order": 2,
+        "isActive": true,
+        "subcategories": {
+          "smartphones": {
+            "id": "smartphones",
+            "name": "الهواتف الذكية",
+            "nameEn": "Smartphones",
+            "icon": "📱",
+            "description": "أحدث الهواتف الذكية وإكسسواراتها",
+            "order": 1
+          },
+          "computers": {
+            "id": "computers",
+            "name": "أجهزة الكمبيوتر",
+            "nameEn": "Computers",
+            "icon": "💻",
+            "description": "لابتوب وأجهزة مكتبية وتابلت",
+            "order": 2
+          },
+          "tv-entertainment": {
+            "id": "tv-entertainment",
+            "name": "أجهزة التلفزيون والترفيه",
+            "nameEn": "TV & Entertainment",
+            "icon": "📺",
+            "description": "تلفزيونات ذكية وأنظمة صوت",
+            "order": 3
+          },
+          "smart-home": {
+            "id": "smart-home",
+            "name": "الأجهزة المنزلية الذكية",
+            "nameEn": "Smart Home Devices",
+            "icon": "🏡",
+            "description": "أجهزة منزلية ذكية ومتصلة",
+            "order": 4
+          }
+        }
+      },
+      "fashion-beauty": {
+        "id": "fashion-beauty",
+        "name": "الأزياء والجمال",
+        "nameEn": "Fashion & Beauty",
+        "icon": "👗",
+        "description": "أزياء عصرية ومنتجات تجميل",
+        "type": "products",
+        "order": 3,
+        "isActive": true,
+        "subcategories": {
+          "mens-clothing": {
+            "id": "mens-clothing",
+            "name": "الملابس الرجالية",
+            "nameEn": "Men's Clothing",
+            "icon": "👔",
+            "description": "بدل وقمصان وأحذية رجالية",
+            "order": 1
+          },
+          "womens-clothing": {
+            "id": "womens-clothing",
+            "name": "الملابس النسائية",
+            "nameEn": "Women's Clothing",
+            "icon": "👗",
+            "description": "فساتين وبلوزات وأحذية نسائية",
+            "order": 2
+          },
+          "bags-accessories": {
+            "id": "bags-accessories",
+            "name": "الحقائب والإكسسوارات",
+            "nameEn": "Bags & Accessories",
+            "icon": "👜",
+            "description": "حقائب ومحافظ وساعات",
+            "order": 3
+          },
+          "beauty-products": {
+            "id": "beauty-products",
+            "name": "منتجات العناية والتجميل",
+            "nameEn": "Beauty & Care Products",
+            "icon": "💄",
+            "description": "مكياج وعطور ومنتجات عناية",
+            "order": 4
+          }
+        }
+      },
+      "automotive": {
+        "id": "automotive",
+        "name": "السيارات والمركبات",
+        "nameEn": "Automotive & Vehicles",
+        "icon": "🚗",
+        "description": "سيارات وقطع غيار وإكسسوارات",
+        "type": "products",
+        "order": 4,
+        "isActive": true,
+        "subcategories": {
+          "cars": {
+            "id": "cars",
+            "name": "السيارات",
+            "nameEn": "Cars",
+            "icon": "🚗",
+            "description": "سيارات جديدة ومستعملة ودراجات",
+            "order": 1
+          },
+          "spare-parts": {
+            "id": "spare-parts",
+            "name": "قطع الغيار والصيانة",
+            "nameEn": "Spare Parts & Maintenance",
+            "icon": "🔧",
+            "description": "إطارات وبطاريات وقطع غيار",
+            "order": 2
+          },
+          "car-accessories": {
+            "id": "car-accessories",
+            "name": "إكسسوارات السيارات",
+            "nameEn": "Car Accessories",
+            "icon": "🎵",
+            "description": "أنظمة صوت وكاميرات وأغطية",
+            "order": 3
+          }
+        }
+      },
+      "food-beverages": {
+        "id": "food-beverages",
+        "name": "الطعام والمشروبات",
+        "nameEn": "Food & Beverages",
+        "icon": "🍕",
+        "description": "مواد غذائية ومشروبات ومخبوزات",
+        "type": "products",
+        "order": 5,
+        "isActive": true,
+        "subcategories": {
+          "groceries": {
+            "id": "groceries",
+            "name": "المواد الغذائية الأساسية",
+            "nameEn": "Groceries",
+            "icon": "🛒",
+            "description": "أرز وحبوب وزيوت ومعلبات",
+            "order": 1
+          },
+          "bakery-sweets": {
+            "id": "bakery-sweets",
+            "name": "المخبوزات والحلويات",
+            "nameEn": "Bakery & Sweets",
+            "icon": "🧁",
+            "description": "خبز وكعك وحلويات ومثلجات",
+            "order": 2
+          },
+          "beverages": {
+            "id": "beverages",
+            "name": "المشروبات",
+            "nameEn": "Beverages",
+            "icon": "🥤",
+            "description": "عصائر ومياه ومشروبات غازية",
+            "order": 3
+          }
+        }
+      },
+      "sports-fitness": {
+        "id": "sports-fitness",
+        "name": "الرياضة واللياقة",
+        "nameEn": "Sports & Fitness",
+        "icon": "🏋️‍♂️",
+        "description": "معدات رياضية وملابس ومكملات",
+        "type": "products",
+        "order": 6,
+        "isActive": true,
+        "subcategories": {
+          "fitness-equipment": {
+            "id": "fitness-equipment",
+            "name": "معدات اللياقة البدنية",
+            "nameEn": "Fitness Equipment",
+            "icon": "🏋️‍♂️",
+            "description": "أجهزة كارديو وأوزان ومعدات يوغا",
+            "order": 1
+          },
+          "sportswear": {
+            "id": "sportswear",
+            "name": "الملابس الرياضية",
+            "nameEn": "Sportswear",
+            "icon": "👕",
+            "description": "ملابس وأحذية وحقائب رياضية",
+            "order": 2
+          },
+          "supplements": {
+            "id": "supplements",
+            "name": "مكملات غذائية",
+            "nameEn": "Supplements",
+            "icon": "💊",
+            "description": "بروتين وفيتامينات ومشروبات طاقة",
+            "order": 3
+          }
+        }
+      },
+      "education-culture": {
+        "id": "education-culture",
+        "name": "التعليم والثقافة",
+        "nameEn": "Education & Culture",
+        "icon": "📚",
+        "description": "كتب وأدوات تعليمية وآلات موسيقية",
+        "type": "products",
+        "order": 7,
+        "isActive": true,
+        "subcategories": {
+          "books": {
+            "id": "books",
+            "name": "الكتب والمطبوعات",
+            "nameEn": "Books & Publications",
+            "icon": "📖",
+            "description": "كتب أكاديمية وروايات ومجلات",
+            "order": 1
+          },
+          "educational-tools": {
+            "id": "educational-tools",
+            "name": "الأدوات التعليمية",
+            "nameEn": "Educational Tools",
+            "icon": "✏️",
+            "description": "قرطاسية وحقائب وأدوات رسم",
+            "order": 2
+          },
+          "musical-instruments": {
+            "id": "musical-instruments",
+            "name": "الآلات الموسيقية",
+            "nameEn": "Musical Instruments",
+            "icon": "🎸",
+            "description": "آلات وترية ونفخ وإيقاعية",
+            "order": 3
+          }
+        }
+      },
+      "health-wellness": {
+        "id": "health-wellness",
+        "name": "الصحة والعافية",
+        "nameEn": "Health & Wellness",
+        "icon": "🏥",
+        "description": "أجهزة طبية ومنتجات عناية ومكملات",
+        "type": "products",
+        "order": 8,
+        "isActive": true,
+        "subcategories": {
+          "medical-devices": {
+            "id": "medical-devices",
+            "name": "الأجهزة الطبية المنزلية",
+            "nameEn": "Home Medical Devices",
+            "icon": "🩺",
+            "description": "أجهزة قياس ضغط وسكر وحرارة",
+            "order": 1
+          },
+          "personal-care": {
+            "id": "personal-care",
+            "name": "منتجات العناية الشخصية",
+            "nameEn": "Personal Care Products",
+            "icon": "🧴",
+            "description": "منتجات نظافة وفرش أسنان وحلاقة",
+            "order": 2
+          },
+          "health-supplements": {
+            "id": "health-supplements",
+            "name": "المكملات الغذائية والأدوية",
+            "nameEn": "Health Supplements & Medicine",
+            "icon": "💊",
+            "description": "فيتامينات وأعشاب وأدوية",
+            "order": 3
+          }
+        }
+      },
+      "travel-tourism": {
+        "id": "travel-tourism",
+        "name": "السفر والسياحة",
+        "nameEn": "Travel & Tourism",
+        "icon": "🎒",
+        "description": "حقائب سفر ومعدات تخييم وهدايا",
+        "type": "products",
+        "order": 9,
+        "isActive": true,
+        "subcategories": {
+          "luggage-travel": {
+            "id": "luggage-travel",
+            "name": "حقائب ومعدات السفر",
+            "nameEn": "Luggage & Travel Equipment",
+            "icon": "🧳",
+            "description": "حقائب سفر ومعدات تخييم",
+            "order": 1
+          },
+          "souvenirs": {
+            "id": "souvenirs",
+            "name": "الهدايا والتذكارات",
+            "nameEn": "Souvenirs & Gifts",
+            "icon": "🎁",
+            "description": "تذكارات وهدايا تراثية وحرفية",
+            "order": 2
+          }
+        }
+      }
+    },
+    "services": {
+      "home-maintenance": {
+        "id": "home-maintenance",
+        "name": "خدمات المنزل والصيانة",
+        "nameEn": "Home & Maintenance Services",
+        "icon": "🏠",
+        "description": "تنظيف وصيانة وتركيب منزلي",
+        "type": "services",
+        "order": 1,
+        "isActive": true,
+        "subcategories": {
+          "cleaning": {
+            "id": "cleaning",
+            "name": "التنظيف والنظافة",
+            "nameEn": "Cleaning Services",
+            "icon": "🧽",
+            "description": "تنظيف شامل ومفروشات ونوافذ",
+            "order": 1
+          },
+          "maintenance": {
+            "id": "maintenance",
+            "name": "الصيانة المنزلية",
+            "nameEn": "Home Maintenance",
+            "icon": "🔧",
+            "description": "سباكة وكهرباء وتكييف ودهان",
+            "order": 2
+          },
+          "installation": {
+            "id": "installation",
+            "name": "التركيب والتجميع",
+            "nameEn": "Installation & Assembly",
+            "icon": "🔨",
+            "description": "تركيب أثاث وأجهزة وستائر",
+            "order": 3
+          }
+        }
+      },
+      "technical-services": {
+        "id": "technical-services",
+        "name": "الخدمات التقنية",
+        "nameEn": "Technical Services",
+        "icon": "📱",
+        "description": "صيانة أجهزة وبرمجة ودعم تقني",
+        "type": "services",
+        "order": 2,
+        "isActive": true,
+        "subcategories": {
+          "device-repair": {
+            "id": "device-repair",
+            "name": "صيانة الأجهزة الإلكترونية",
+            "nameEn": "Device Repair",
+            "icon": "🔧",
+            "description": "إصلاح هواتف وكمبيوتر وتلفزيون",
+            "order": 1
+          },
+          "programming": {
+            "id": "programming",
+            "name": "خدمات البرمجة والتطوير",
+            "nameEn": "Programming & Development",
+            "icon": "💻",
+            "description": "تطوير مواقع وتطبيقات وتصميم",
+            "order": 2
+          },
+          "tech-support": {
+            "id": "tech-support",
+            "name": "الدعم التقني",
+            "nameEn": "Technical Support",
+            "icon": "🆘",
+            "description": "إعداد شبكات وتدريب واستشارات",
+            "order": 3
+          }
+        }
+      },
+      "beauty-care": {
+        "id": "beauty-care",
+        "name": "خدمات التجميل والعناية",
+        "nameEn": "Beauty & Care Services",
+        "icon": "💄",
+        "description": "صالونات تجميل وسبا وعناية",
+        "type": "services",
+        "order": 3,
+        "isActive": true,
+        "subcategories": {
+          "beauty-salons": {
+            "id": "beauty-salons",
+            "name": "خدمات صالونات التجميل",
+            "nameEn": "Beauty Salon Services",
+            "icon": "💇‍♀️",
+            "description": "قص وصبغ وعناية بالشعر والبشرة",
+            "order": 1
+          },
+          "spa-wellness": {
+            "id": "spa-wellness",
+            "name": "خدمات السبا والاسترخاء",
+            "nameEn": "Spa & Wellness Services",
+            "icon": "🧖‍♀️",
+            "description": "مساج وعلاجات الوجه والجسم",
+            "order": 2
+          },
+          "nail-services": {
+            "id": "nail-services",
+            "name": "خدمات الأظافر",
+            "nameEn": "Nail Services",
+            "icon": "💅",
+            "description": "مانيكير وبديكير وتصميم أظافر",
+            "order": 3
+          }
+        }
+      },
+      "automotive-services": {
+        "id": "automotive-services",
+        "name": "خدمات السيارات",
+        "nameEn": "Automotive Services",
+        "icon": "🚗",
+        "description": "صيانة وتنظيف وطوارئ سيارات",
+        "type": "services",
+        "order": 4,
+        "isActive": true,
+        "subcategories": {
+          "car-maintenance": {
+            "id": "car-maintenance",
+            "name": "الصيانة والإصلاح",
+            "nameEn": "Maintenance & Repair",
+            "icon": "🔧",
+            "description": "صيانة دورية وإصلاح محركات",
+            "order": 1
+          },
+          "car-cleaning": {
+            "id": "car-cleaning",
+            "name": "التنظيف والتجميل",
+            "nameEn": "Cleaning & Detailing",
+            "icon": "🚿",
+            "description": "غسيل وتلميع وتنظيف داخلي",
+            "order": 2
+          },
+          "emergency-services": {
+            "id": "emergency-services",
+            "name": "خدمات الطوارئ",
+            "nameEn": "Emergency Services",
+            "icon": "🚨",
+            "description": "سحب سيارات وطوارئ 24/7",
+            "order": 3
+          }
+        }
+      },
+      "food-hospitality": {
+        "id": "food-hospitality",
+        "name": "خدمات الطعام والضيافة",
+        "nameEn": "Food & Hospitality Services",
+        "icon": "🍔",
+        "description": "توصيل طعام وطبخ وضيافة",
+        "type": "services",
+        "order": 5,
+        "isActive": true,
+        "subcategories": {
+          "food-delivery": {
+            "id": "food-delivery",
+            "name": "توصيل الطعام",
+            "nameEn": "Food Delivery",
+            "icon": "🚚",
+            "description": "مطاعم وجبات سريعة وعالمية",
+            "order": 1
+          },
+          "catering": {
+            "id": "catering",
+            "name": "خدمات الطبخ والضيافة",
+            "nameEn": "Catering Services",
+            "icon": "🍽️",
+            "description": "طبخ منزلي وكيتيرنغ ومناسبات",
+            "order": 2
+          },
+          "cafes-beverages": {
+            "id": "cafes-beverages",
+            "name": "خدمات المقاهي والمشروبات",
+            "nameEn": "Cafes & Beverages",
+            "icon": "☕",
+            "description": "قهوة وعصائر ومشروبات صحية",
+            "order": 3
+          }
+        }
+      },
+      "fitness-sports": {
+        "id": "fitness-sports",
+        "name": "خدمات الرياضة واللياقة",
+        "nameEn": "Fitness & Sports Services",
+        "icon": "🏋️‍♂️",
+        "description": "نوادي رياضية وتدريب ورياضات",
+        "type": "services",
+        "order": 6,
+        "isActive": true,
+        "subcategories": {
+          "gyms": {
+            "id": "gyms",
+            "name": "النوادي الرياضية",
+            "nameEn": "Gyms & Fitness Centers",
+            "icon": "🏋️‍♂️",
+            "description": "عضويات ودروس جماعية وتدريب شخصي",
+            "order": 1
+          },
+          "water-sports": {
+            "id": "water-sports",
+            "name": "الرياضات المائية",
+            "nameEn": "Water Sports",
+            "icon": "🏊‍♀️",
+            "description": "دروس سباحة وأكواريبكس وعلاج مائي",
+            "order": 2
+          },
+          "martial-arts": {
+            "id": "martial-arts",
+            "name": "الرياضات القتالية",
+            "nameEn": "Martial Arts",
+            "icon": "🥋",
+            "description": "كاراتيه وملاكمة ودفاع عن النفس",
+            "order": 3
+          }
+        }
+      },
+      "education-training": {
+        "id": "education-training",
+        "name": "خدمات التعليم والتدريب",
+        "nameEn": "Education & Training Services",
+        "icon": "🎓",
+        "description": "دروس ودورات وتدريب مهني",
+        "type": "services",
+        "order": 7,
+        "isActive": true,
+        "subcategories": {
+          "academic": {
+            "id": "academic",
+            "name": "التعليم الأكاديمي",
+            "nameEn": "Academic Education",
+            "icon": "📚",
+            "description": "دروس خصوصية ولغات وتحضير امتحانات",
+            "order": 1
+          },
+          "professional": {
+            "id": "professional",
+            "name": "التدريب المهني",
+            "nameEn": "Professional Training",
+            "icon": "💼",
+            "description": "دورات تقنية وإدارية ومهارات شخصية",
+            "order": 2
+          },
+          "arts-crafts": {
+            "id": "arts-crafts",
+            "name": "التعليم الفني والحرفي",
+            "nameEn": "Arts & Crafts Education",
+            "icon": "🎨",
+            "description": "موسيقى ورسم وحرف يدوية",
+            "order": 3
+          }
+        }
+      },
+      "health-services": {
+        "id": "health-services",
+        "name": "الخدمات الصحية",
+        "nameEn": "Health Services",
+        "icon": "🏥",
+        "description": "استشارات طبية وعلاج وخدمات منزلية",
+        "type": "services",
+        "order": 8,
+        "isActive": true,
+        "subcategories": {
+          "medical-consultation": {
+            "id": "medical-consultation",
+            "name": "الاستشارات الطبية",
+            "nameEn": "Medical Consultation",
+            "icon": "👩‍⚕️",
+            "description": "فحوصات واستشارات ومتابعة مزمنة",
+            "order": 1
+          },
+          "physiotherapy": {
+            "id": "physiotherapy",
+            "name": "خدمات العلاج الطبيعي",
+            "nameEn": "Physiotherapy Services",
+            "icon": "🤸‍♀️",
+            "description": "علاج إصابات وتأهيل وتمارين علاجية",
+            "order": 2
+          },
+          "home-healthcare": {
+            "id": "home-healthcare",
+            "name": "الخدمات المنزلية الصحية",
+            "nameEn": "Home Healthcare",
+            "icon": "🏠",
+            "description": "تمريض منزلي ورعاية مسنين",
+            "order": 3
+          }
+        }
+      },
+      "travel-services": {
+        "id": "travel-services",
+        "name": "خدمات السفر والسياحة",
+        "nameEn": "Travel & Tourism Services",
+        "icon": "✈️",
+        "description": "حجوزات وجولات وإرشاد سياحي",
+        "type": "services",
+        "order": 9,
+        "isActive": true,
+        "subcategories": {
+          "bookings": {
+            "id": "bookings",
+            "name": "حجوزات السفر",
+            "nameEn": "Travel Bookings",
+            "icon": "🎫",
+            "description": "طيران وفنادق وسيارات وتأشيرات",
+            "order": 1
+          },
+          "tours": {
+            "id": "tours",
+            "name": "الجولات السياحية",
+            "nameEn": "Tourist Tours",
+            "icon": "🗺️",
+            "description": "رحلات داخلية وثقافية ومغامرات",
+            "order": 2
+          },
+          "guide-services": {
+            "id": "guide-services",
+            "name": "خدمات الإرشاد السياحي",
+            "nameEn": "Tourist Guide Services",
+            "icon": "🧭",
+            "description": "مرشدين وترجمة واستشارات سياحية",
+            "order": 3
+          }
+        }
+      },
+      "professional-services": {
+        "id": "professional-services",
+        "name": "الخدمات المهنية والاستشارية",
+        "nameEn": "Professional & Consulting Services",
+        "icon": "🔧",
+        "description": "قانونية ومحاسبية وتصميم وإعلان",
+        "type": "services",
+        "order": 10,
+        "isActive": true,
+        "subcategories": {
+          "legal": {
+            "id": "legal",
+            "name": "الخدمات القانونية",
+            "nameEn": "Legal Services",
+            "icon": "⚖️",
+            "description": "استشارات وعقود وتمثيل قانوني",
+            "order": 1
+          },
+          "accounting": {
+            "id": "accounting",
+            "name": "الخدمات المحاسبية والمالية",
+            "nameEn": "Accounting & Financial Services",
+            "icon": "💰",
+            "description": "مسك دفاتر وقوائم مالية واستشارات ضريبية",
+            "order": 2
+          },
+          "design-advertising": {
+            "id": "design-advertising",
+            "name": "خدمات التصميم والإعلان",
+            "nameEn": "Design & Advertising Services",
+            "icon": "🎨",
+            "description": "هويات تجارية وتصوير وإنتاج محتوى",
+            "order": 3
+          }
+        }
+      }
+    }
+  },
+  "sample_products": {
+    "product_001": {
+      "id": "product_001",
+      "name": "سرير خشبي كلاسيكي",
+      "nameEn": "Classic Wooden Bed",
+      "categoryId": "home-furniture",
+      "subcategoryId": "bedroom",
+      "brand": "هوم كومفورت",
+      "brandEn": "Home Comfort",
+      "price": 2500,
+      "originalPrice": 3000,
+      "currency": "JOD",
+      "description": "سرير خشبي عالي الجودة بتصميم كلاسيكي أنيق، مصنوع من خشب البلوط الطبيعي",
+      "descriptionEn": "High-quality wooden bed with elegant classic design, made from natural oak wood",
+      "specifications": {
+        "material": "خشب البلوط الطبيعي",
+        "size": "200x180 سم",
+        "height": "120 سم",
+        "weight": "85 كغ",
+        "color": "بني فاتح",
+        "warranty": "سنتان"
+      },
+      "images": [
+        "https://example.com/bed1_main.jpg",
+        "https://example.com/bed1_side.jpg",
+        "https://example.com/bed1_detail.jpg"
+      ],
+      "installmentOptions": {
+        "3months": {
+          "monthlyPayment": 850,
+          "totalAmount": 2550,
+          "interestRate": 2
+        },
+        "6months": {
+          "monthlyPayment": 440,
+          "totalAmount": 2640,
+          "interestRate": 5.6
+        },
+        "12months": {
+          "monthlyPayment": 230,
+          "totalAmount": 2760,
+          "interestRate": 10.4
+        }
+      },
+      "stock": 15,
+      "rating": 4.8,
+      "reviewsCount": 127,
+      "isActive": true,
+      "isFeatured": true,
+      "tags": ["أثاث", "غرفة نوم", "خشبي", "كلاسيكي"],
+      "createdAt": "2025-01-15T00:00:00Z",
+      "updatedAt": "2025-07-20T00:00:00Z"
+    },
+    "product_002": {
+      "id": "product_002",
+      "name": "iPhone 15 Pro Max",
+      "nameEn": "iPhone 15 Pro Max",
+      "categoryId": "electronics",
+      "subcategoryId": "smartphones",
+      "brand": "Apple",
+      "brandEn": "Apple",
+      "price": 1200,
+      "originalPrice": 1300,
+      "currency": "JOD",
+      "description": "أحدث هاتف ذكي من آبل بتقنيات متطورة وكاميرا احترافية",
+      "descriptionEn": "Latest Apple smartphone with advanced technologies and professional camera",
+      "specifications": {
+        "storage": "256 جيجابايت",
+        "ram": "8 جيجابايت",
+        "screen": "6.7 بوصة Super Retina XDR",
+        "camera": "48 ميجابكسل ثلاثية",
+        "battery": "4441 ميلي أمبير",
+        "os": "iOS 17",
+        "warranty": "سنة واحدة"
+      },
+      "images": [
+        "https://example.com/iphone15_main.jpg",
+        "https://example.com/iphone15_back.jpg",
+        "https://example.com/iphone15_side.jpg"
+      ],
+      "installmentOptions": {
+        "3months": {
+          "monthlyPayment": 410,
+          "totalAmount": 1230,
+          "interestRate": 2.5
+        },
+        "6months": {
+          "monthlyPayment": 210,
+          "totalAmount": 1260,
+          "interestRate": 5
+        },
+        "12months": {
+          "monthlyPayment": 110,
+          "totalAmount": 1320,
+          "interestRate": 10
+        },
+        "24months": {
+          "monthlyPayment": 60,
+          "totalAmount": 1440,
+          "interestRate": 20
+        }
+      },
+      "stock": 8,
+      "rating": 4.9,
+      "reviewsCount": 89,
+      "isActive": true,
+      "isFeatured": true,
+      "tags": ["هاتف", "ذكي", "آبل", "كاميرا"],
+      "createdAt": "2025-01-10T00:00:00Z",
+      "updatedAt": "2025-07-18T00:00:00Z"
+    },
+    "product_003": {
+      "id": "product_003",
+      "name": "فستان سهرة أنيق",
+      "nameEn": "Elegant Evening Dress",
+      "categoryId": "fashion-beauty",
+      "subcategoryId": "womens-clothing",
+      "brand": "إيليت فاشن",
+      "brandEn": "Elite Fashion",
+      "price": 180,
+      "originalPrice": 220,
+      "currency": "JOD",
+      "description": "فستان سهرة أنيق باللون الأسود مناسب للمناسبات الخاصة",
+      "descriptionEn": "Elegant black evening dress perfect for special occasions",
+      "specifications": {
+        "material": "حرير طبيعي",
+        "sizes": ["S", "M", "L", "XL"],
+        "color": "أسود",
+        "style": "A-Line",
+        "length": "طويل",
+        "care": "تنظيف جاف فقط"
+      },
+      "images": [
+        "https://example.com/dress_main.jpg",
+        "https://example.com/dress_side.jpg",
+        "https://example.com/dress_detail.jpg"
+      ],
+      "installmentOptions": {
+        "3months": {
+          "monthlyPayment": 65,
+          "totalAmount": 195,
+          "interestRate": 8.3
+        },
+        "6months": {
+          "monthlyPayment": 35,
+          "totalAmount": 210,
+          "interestRate": 16.7
+        }
+      },
+      "stock": 25,
+      "rating": 4.6,
+      "reviewsCount": 43,
+      "isActive": true,
+      "isFeatured": false,
+      "tags": ["فستان", "سهرة", "نسائي", "أنيق"],
+      "createdAt": "2025-02-01T00:00:00Z",
+      "updatedAt": "2025-07-15T00:00:00Z"
+    }
+  },
+  "sample_services": {
+    "service_001": {
+      "id": "service_001",
+      "name": "تنظيف شامل للمنزل",
+      "nameEn": "Complete Home Cleaning",
+      "categoryId": "home-maintenance",
+      "subcategoryId": "cleaning",
+      "provider": "شركة النظافة المثالية",
+      "providerEn": "Perfect Cleaning Company",
+      "price": 75,
+      "currency": "JOD",
+      "priceType": "per_service",
+      "description": "خدمة تنظيف شاملة للمنزل تشمل جميع الغرف والحمامات والمطبخ",
+      "descriptionEn": "Complete home cleaning service including all rooms, bathrooms and kitchen",
+      "serviceDetails": {
+        "duration": "4-6 ساعات",
+        "coverage": "جميع غرف المنزل",
+        "equipment": "معدات ومواد تنظيف مجانية",
+        "team": "فريق مدرب ومؤهل",
+        "guarantee": "ضمان جودة الخدمة",
+        "availability": "7 أيام في الأسبوع"
+      },
+      "images": [
+        "https://example.com/cleaning_service1.jpg",
+        "https://example.com/cleaning_service2.jpg"
+      ],
+      "installmentOptions": {
+        "3months": {
+          "monthlyPayment": 27,
+          "totalAmount": 81,
+          "interestRate": 8
+        }
+      },
+      "rating": 4.7,
+      "reviewsCount": 156,
+      "isActive": true,
+      "isFeatured": true,
+      "tags": ["تنظيف", "منزل", "شامل", "مضمون"],
+      "serviceArea": ["عمان", "الزرقاء", "إربد"],
+      "createdAt": "2025-01-20T00:00:00Z",
+      "updatedAt": "2025-07-19T00:00:00Z"
+    },
+    "service_002": {
+      "id": "service_002",
+      "name": "إصلاح الهواتف الذكية",
+      "nameEn": "Smartphone Repair",
+      "categoryId": "technical-services",
+      "subcategoryId": "device-repair",
+      "provider": "تك ريبير سنتر",
+      "providerEn": "Tech Repair Center",
+      "price": 45,
+      "currency": "JOD",
+      "priceType": "starting_from",
+      "description": "خدمة إصلاح جميع أنواع الهواتف الذكية بضمان وجودة عالية",
+      "descriptionEn": "Repair service for all types of smartphones with warranty and high quality",
+      "serviceDetails": {
+        "duration": "1-3 ساعات",
+        "warranty": "3 شهور على القطع",
+        "brands": ["iPhone", "Samsung", "Huawei", "Xiaomi"],
+        "services": ["شاشة", "بطارية", "كاميرا", "مكبر صوت"],
+        "pickup": "خدمة التوصيل متوفرة",
+        "experience": "خبرة 10 سنوات"
+      },
+      "images": [
+        "https://example.com/phone_repair1.jpg",
+        "https://example.com/phone_repair2.jpg"
+      ],
+      "installmentOptions": {
+        "3months": {
+          "monthlyPayment": 17,
+          "totalAmount": 51,
+          "interestRate": 13.3
+        }
+      },
+      "rating": 4.9,
+      "reviewsCount": 284,
+      "isActive": true,
+      "isFeatured": true,
+      "tags": ["إصلاح", "هواتف", "ضمان", "سريع"],
+      "serviceArea": ["عمان", "الزرقاء"],
+      "createdAt": "2025-01-25T00:00:00Z",
+      "updatedAt": "2025-07-21T00:00:00Z"
+    },
+    "service_003": {
+      "id": "service_003",
+      "name": "قص وتصفيف الشعر",
+      "nameEn": "Hair Cut & Styling",
+      "categoryId": "beauty-care",
+      "subcategoryId": "beauty-salons",
+      "provider": "صالون الجمال الملكي",
+      "providerEn": "Royal Beauty Salon",
+      "price": 25,
+      "currency": "JOD",
+      "priceType": "per_service",
+      "description": "خدمة قص وتصفيف الشعر بأحدث الطرق والأساليب العصرية",
+      "descriptionEn": "Hair cutting and styling service with latest modern methods and styles",
+      "serviceDetails": {
+        "duration": "1-2 ساعات",
+        "services": ["قص", "تصفيف", "غسيل", "تجفيف"],
+        "products": "منتجات عالية الجودة",
+        "stylists": "خبراء مختصون",
+        "appointment": "حجز مسبق مطلوب",
+        "ambiance": "أجواء مريحة وهادئة"
+      },
+      "images": [
+        "https://example.com/hair_salon1.jpg",
+        "https://example.com/hair_salon2.jpg"
+      ],
+      "installmentOptions": {
+        "3months": {
+          "monthlyPayment": 10,
+          "totalAmount": 30,
+          "interestRate": 20
+        }
+      },
+      "rating": 4.5,
+      "reviewsCount": 198,
+      "isActive": true,
+      "isFeatured": false,
+      "tags": ["تجميل", "شعر", "قص", "تصفيف"],
+      "serviceArea": ["عمان"],
+      "createdAt": "2025-02-10T00:00:00Z",
+      "updatedAt": "2025-07-16T00:00:00Z"
+    }
+  },
+  "app_settings": {
+    "installment_settings": {
+      "min_amount": 50,
+      "max_amount": 10000,
+      "available_periods": [3, 6, 12, 24],
+      "interest_rates": {
+        "3months": 2.5,
+        "6months": 5.5,
+        "12months": 10.5,
+        "24months": 20.0
+      },
+      "processing_fee": 5,
+      "currency": "JOD"
+    },
+    "delivery_settings": {
+      "free_delivery_threshold": 100,
+      "delivery_fee": 3,
+      "express_delivery_fee": 8,
+      "delivery_areas": [
+        {
+          "area": "عمان",
+          "fee": 3,
+          "express_fee": 8
+        },
+        {
+          "area": "الزرقاء",
+          "fee": 5,
+          "express_fee": 12
+        },
+        {
+          "area": "إربد",
+          "fee": 7,
+          "express_fee": 15
+        }
+      ]
+    },
+    "payment_methods": [
+      {
+        "id": "credit_card",
+        "name": "بطاقة ائتمان",
+        "nameEn": "Credit Card",
+        "isActive": true
+      },
+      {
+        "id": "bank_transfer",
+        "name": "تحويل بنكي",
+        "nameEn": "Bank Transfer",
+        "isActive": true
+      },
+      {
+        "id": "cash_on_delivery",
+        "name": "الدفع عند الاستلام",
+        "nameEn": "Cash on Delivery",
+        "isActive": true
+      }
+    ]
+  },
+  "user_roles": {
+    "admin": {
+      "permissions": [
+        "create_categories",
+        "edit_categories",
+        "delete_categories",
+        "create_products",
+        "edit_products",
+        "delete_products",
+        "manage_users",
+        "view_analytics",
+        "manage_orders"
+      ]
+    },
+    "vendor": {
+      "permissions": [
+        "create_products",
+        "edit_own_products",
+        "view_own_analytics",
+        "manage_own_orders"
+      ]
+    },
+    "customer": {
+      "permissions": [
+        "browse_products",
+        "place_orders",
+        "view_own_orders",
+        "write_reviews"
+      ]
+    }
+  }
+}

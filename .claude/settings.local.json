@@ -25,7 +25,8 @@
       "Bash(grep:*)",
       "Bash(flutter:*)",
       "Bash(ls:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(firebase firestore:indexes:*)"
     ],
     "deny": []
   }

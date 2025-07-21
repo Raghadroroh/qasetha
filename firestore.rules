@@ -6,42 +6,36 @@ service cloud.firestore {
     function isAuthenticated() {
       return request.auth != null;
     }
-    
+
     function isOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
     }
-    
-    // NEW: Check if user is a guest (anonymous)
+
     function isGuest() {
       return request.auth != null && request.auth.token.firebase.sign_in_provider == 'anonymous';
     }
-    
-    // NEW: Check if user is NOT a guest
+
     function isRegisteredUser() {
       return isAuthenticated() && !isGuest();
     }
-    
+
     function isAdmin() {
-      return request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'admin';
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'admin';
     }
-    
+
     function isStoreOwner() {
-      return request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'store_owner';
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'store_owner';
     }
-    
+
     function isVerifiedUser() {
-      return request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isVerified == true;
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isVerified == true;
     }
-    
-    // NEW: Check if guest has profile
+
+    // ✅ FIXED: guestHasProfile now uses `exists` correctly
     function guestHasProfile() {
       return exists(/databases/$(database)/documents/guestProfiles/$(request.auth.uid));
     }
-    
-    // Validation functions
+
     function isValidUserData() {
       let data = request.resource.data;
       return data.keys().hasAll(['email', 'fullName', 'phoneNumber', 'userType']) &&
@@ -50,7 +44,7 @@ service cloud.firestore {
         data.fullName is string &&
         data.phoneNumber is string;
     }
-    
+
     function isValidEmploymentData() {
       let emp = request.resource.data.employment;
       return emp == null || (
@@ -60,7 +54,7 @@ service cloud.firestore {
         emp.jobTitle is string
       );
     }
-    
+
     function isValidAddressData() {
       let addr = request.resource.data.address;
       return addr == null || (
@@ -69,40 +63,28 @@ service cloud.firestore {
         addr.governorate is string
       );
     }
-    
-    // NEW: Guest Profiles collection
+
     match /guestProfiles/{guestId} {
-      // Guests can create and read their own profile
       allow read: if isAuthenticated() && (isOwner(guestId) || isAdmin());
-      
       allow create: if isGuest() && isOwner(guestId) && 
         request.resource.data.keys().hasAll(['createdAt', 'lastSeen']) &&
         request.resource.data.isGuest == true;
-      
       allow update: if isGuest() && isOwner(guestId) &&
         request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['lastSeen', 'viewedProducts', 'cartItems', 'preferences']);
-      
       allow delete: if isOwner(guestId) || isAdmin();
     }
-    
-    // NEW: Guest Activities collection (for analytics)
+
     match /guestActivities/{activityId} {
       allow read: if isAdmin();
       allow create: if isGuest();
       allow update, delete: if false;
     }
-    
-    // Users collection - UPDATED
+
     match /users/{userId} {
-      // Read rules - UPDATED: Guests can't read user data
       allow read: if isRegisteredUser() && (
-        isOwner(userId) ||
-        isAdmin() ||
-        (isStoreOwner() && isVerifiedUser())
+        isOwner(userId) || isAdmin() || (isStoreOwner() && isVerifiedUser())
       );
-      
-      // Create rules - UPDATED: Block guest creation in users collection
       allow create: if isRegisteredUser() && 
         isOwner(userId) && 
         isValidUserData() &&
@@ -111,8 +93,6 @@ service cloud.firestore {
         request.resource.data.availableCredit == 0 &&
         request.resource.data.totalDebt == 0 &&
         request.resource.data.isVerified == false;
-      
-      // Update rules - No changes needed
       allow update: if isRegisteredUser() && (
         (isOwner(userId) && 
           !request.resource.data.diff(resource.data).affectedKeys().hasAny([
@@ -122,157 +102,107 @@ service cloud.firestore {
           isValidUserData() &&
           isValidEmploymentData() &&
           isValidAddressData()
-        ) ||
-        isAdmin()
+        ) || isAdmin()
       );
-      
       allow delete: if isAdmin();
     }
-    
-    // Products collection - UPDATED
+
     match /products/{productId} {
-      allow read: if true; // Guests can browse products
-      
-      // Only registered users can create/update/delete
+      allow read: if true;
       allow create: if isRegisteredUser() && (
         isStoreOwner() || isAdmin()
       ) && request.resource.data.storeId == request.auth.uid;
-      
       allow update: if isRegisteredUser() && (
-        (isStoreOwner() && resource.data.storeId == request.auth.uid) ||
-        isAdmin()
+        (isStoreOwner() && resource.data.storeId == request.auth.uid) || isAdmin()
       );
-      
       allow delete: if isRegisteredUser() && (
-        (isStoreOwner() && resource.data.storeId == request.auth.uid) ||
-        isAdmin()
+        (isStoreOwner() && resource.data.storeId == request.auth.uid) || isAdmin()
       );
     }
-    
-    // Stores collection - No changes needed
+
     match /stores/{storeId} {
-      allow read: if true; // Guests can view stores
-      
-      allow create: if isRegisteredUser() && 
-        isStoreOwner() && 
-        isOwner(storeId);
-      
+      allow read: if true;
+      allow create: if isRegisteredUser() && isStoreOwner() && isOwner(storeId);
       allow update: if isRegisteredUser() && (
-        (isStoreOwner() && isOwner(storeId)) ||
-        isAdmin()
+        (isStoreOwner() && isOwner(storeId)) || isAdmin()
       );
-      
       allow delete: if isAdmin();
     }
-    
-    // Orders collection - UPDATED
+
     match /orders/{orderId} {
-      // Guests cannot access orders
       allow read: if isRegisteredUser() && (
         resource.data.userId == request.auth.uid ||
         resource.data.storeId == request.auth.uid ||
         isAdmin()
       );
-      
-      // Guests cannot create orders
       allow create: if isRegisteredUser() && 
         request.resource.data.userId == request.auth.uid &&
         isVerifiedUser();
-      
       allow update: if isRegisteredUser() && (
         (resource.data.storeId == request.auth.uid && 
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
-        ) ||
-        isAdmin()
+        ) || isAdmin()
       );
-      
       allow delete: if isAdmin();
     }
-    
-    // Installment Plans collection - UPDATED
+
     match /installmentPlans/{planId} {
-      // Guests cannot access installment plans
       allow read: if isRegisteredUser() && (
-        resource.data.userId == request.auth.uid ||
-        isAdmin()
+        resource.data.userId == request.auth.uid || isAdmin()
       );
-      
       allow create: if isRegisteredUser() && 
         request.resource.data.userId == request.auth.uid &&
         isVerifiedUser();
-      
       allow update: if isAdmin();
-      
       allow delete: if false;
     }
-    
-    // Categories collection - No changes needed
+
     match /categories/{categoryId} {
-      allow read: if true; // Guests can view categories
+      allow read: if true;
       allow write: if isAdmin();
     }
-    
-    // Notifications collection - UPDATED
+
     match /notifications/{notificationId} {
-      // Guests don't get notifications
-      allow read: if isRegisteredUser() && 
-        resource.data.userId == request.auth.uid;
-      
+      allow read: if isRegisteredUser() && resource.data.userId == request.auth.uid;
       allow create: if isRegisteredUser() && (
-        isAdmin() || 
-        (isStoreOwner() && request.resource.data.type == 'order')
+        isAdmin() || (isStoreOwner() && request.resource.data.type == 'order')
       );
-      
       allow update: if isRegisteredUser() && 
         isOwner(resource.data.userId) &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt']);
-      
-      allow delete: if isRegisteredUser() && 
-        isOwner(resource.data.userId);
+      allow delete: if isRegisteredUser() && isOwner(resource.data.userId);
     }
-    
-    // Support Tickets collection - UPDATED
+
     match /supportTickets/{ticketId} {
-      // Guests cannot create support tickets
       allow read: if isRegisteredUser() && (
-        resource.data.userId == request.auth.uid ||
-        isAdmin()
+        resource.data.userId == request.auth.uid || isAdmin()
       );
-      
-      allow create: if isRegisteredUser() && 
-        request.resource.data.userId == request.auth.uid;
-      
+      allow create: if isRegisteredUser() && request.resource.data.userId == request.auth.uid;
       allow update: if isRegisteredUser() && (
         (resource.data.userId == request.auth.uid && 
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
-        ) ||
-        isAdmin()
+        ) || isAdmin()
       );
-      
       allow delete: if false;
     }
-    
-    // App Settings - No changes needed
+
     match /settings/{document} {
-      allow read: if true; // Guests can read app settings
+      allow read: if true;
       allow write: if isAdmin();
     }
-    
-    // NEW: Guest Carts collection (temporary cart storage for guests)
+
     match /guestCarts/{cartId} {
       allow read, write: if isGuest() && isOwner(cartId);
       allow read: if isAdmin();
       allow delete: if isOwner(cartId) || isAdmin();
     }
-    
-    // NEW: Guest Wishlist collection
+
     match /guestWishlists/{wishlistId} {
       allow read, write: if isGuest() && isOwner(wishlistId);
       allow read: if isAdmin();
       allow delete: if isOwner(wishlistId) || isAdmin();
     }
-    
-    // Prevent access to any other collections
+
     match /{document=**} {
       allow read, write: if false;
     }
