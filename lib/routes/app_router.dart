@@ -4,11 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/auth_state_provider.dart';
 import '../models/category.dart';
-import '../screens/auth/login_screen.dart';
-import '../screens/auth/signup_screen.dart';
 import '../screens/auth/phone_login_screen.dart';
 import '../screens/auth/phone_signup_screen.dart';
-import '../screens/auth/forgot_password_screen.dart';
 import '../screens/auth/reset_password_screen.dart';
 import '../screens/auth/otp_verify_screen.dart';
 import '../screens/auth/verify_email_screen.dart';
@@ -95,14 +92,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return null;
         }
 
-        // If user needs email verification
-        if (authState.needsEmailVerification &&
-            currentLocation != '/verify-email') {
-          LoggerService.info(
-            'User needs email verification, redirecting from $currentLocation to /verify-email',
-          );
-          return '/verify-email';
-        }
+        // Email verification redirect is handled by individual screens (signup/login)
+        // to avoid conflicts and loops
 
         // If user needs phone verification
         if (authState.needsPhoneVerification &&
@@ -111,9 +102,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return '/otp-verify';
         }
 
-        // If user is authenticated (including guest) but on public route, redirect to dashboard
-        if ((isAuthenticated || isGuest) &&
-            publicRoutes.contains(currentLocation)) {
+        // Allow free navigation between login and signup
+        if (currentLocation == '/login' || currentLocation == '/signup') {
+          return null;
+        }
+        
+        // If user is authenticated (including guest) but on other public routes, redirect to dashboard
+        if ((isAuthenticated || isGuest) && publicRoutes.contains(currentLocation)) {
           LoggerService.info(
             'Authenticated/guest user on public route $currentLocation, redirecting to dashboard',
           );
@@ -163,24 +158,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      // Authentication routes
-      GoRoute(
-        path: '/login',
-        pageBuilder: (context, state) => _buildModernPage(
-          key: state.pageKey,
-          child: const LoginScreen(),
-          transitionType: TransitionType.slideFromBottom,
-        ),
-      ),
+   
 
-      GoRoute(
-        path: '/signup',
-        pageBuilder: (context, state) => _buildModernPage(
-          key: state.pageKey,
-          child: const SignupScreen(),
-          transitionType: TransitionType.slideFromBottom,
-        ),
-      ),
+      
 
       GoRoute(
         path: '/phone-login',
@@ -200,15 +180,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      GoRoute(
-        path: '/forgot-password',
-        pageBuilder: (context, state) => _buildModernPage(
-          key: state.pageKey,
-          child: const ForgotPasswordScreen(),
-          transitionType: TransitionType.slideFromBottom,
-        ),
-      ),
-
+     
       GoRoute(
         path: '/reset-password',
         pageBuilder: (context, state) => _buildModernPage(

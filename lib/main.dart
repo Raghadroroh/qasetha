@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart' as provider_package;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'dart:async';
-import 'routes/app_router.dart';
+import 'routes/enhanced_app_router.dart';
 import 'utils/theme.dart';
 import 'utils/firebase_options.dart';
 import 'services/theme_service.dart';
@@ -136,7 +136,7 @@ class _QasethaAppState extends ConsumerState<QasethaApp> with WidgetsBindingObse
 
   @override
   Widget build(BuildContext context) {
-    final router = ref.watch(appRouterProvider);
+    final router = ref.watch(enhancedAppRouterProvider);
     
     return provider_package.ChangeNotifierProvider.value(
       value: widget.themeService,

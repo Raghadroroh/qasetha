@@ -113,4 +113,5 @@ enum AuthResultType {
   guestSignIn,
   conversion,
   guestError,
+  signOut,
 }

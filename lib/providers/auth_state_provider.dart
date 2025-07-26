@@ -701,7 +701,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
         }
 
         LoggerService.info('Guest sign in successful, state updated');
-        print(
+        LoggerService.info(
           '🟢 Guest state updated - Status: ${state.status}, isGuest: ${state.isGuest}, isLoading: ${state.isLoading}',
         );
 
