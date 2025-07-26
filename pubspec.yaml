@@ -34,6 +34,8 @@ dependencies:
   fluttertoast: ^8.2.8
   firebase_storage: ^12.4.9
   image_picker: ^1.0.4
+  cached_network_image: ^3.3.1
+  image: ^4.1.7
   sms_autofill: ^2.3.0
   intl: 0.20.2
   connectivity_plus: ^6.0.5

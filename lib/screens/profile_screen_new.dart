@@ -11,6 +11,7 @@ import '../widgets/guest_banner.dart';
 import '../widgets/guest_conversion_modal.dart';
 import '../widgets/guest_account_creation_dialog.dart';
 import '../widgets/universal_back_handler.dart';
+import '../widgets/profile_photo_upload.dart';
 import 'dart:math' as math;
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -383,111 +384,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       ),
       child: Column(
         children: [
-          // Profile Image with Glow Effect
-          AnimatedBuilder(
-            animation: _glowController,
-            builder: (context, child) {
-              return Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: (isDarkMode ? const Color(0xFF00E5FF) : const Color(0xFF2196F3))
-                          .withValues(alpha: _glow.value * 0.5),
-                      blurRadius: 30,
-                      spreadRadius: 5,
-                    ),
-                  ],
-                ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Animated Background
-                    AnimatedBuilder(
-                      animation: _waveController,
-                      builder: (context, child) {
-                        return Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                const Color(0xFF667eea),
-                                const Color(0xFF764ba2),
-                              ],
-                            ),
-                          ),
-                          child: CustomPaint(
-                            painter: ProfileBackgroundPainter(
-                              animation: _waveController.value,
-                            ),
-                            size: const Size(120, 120),
-                          ),
-                        );
-                      },
-                    ),
-                    
-                    // Profile Image or Initials
-                    Container(
-                      width: 112,
-                      height: 112,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-                        border: Border.all(
-                          color: isDarkMode ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
-                          width: 3,
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          _getInitials(_userProfile?.fullName ?? user?.name ?? (isArabic ? 'مستخدم' : 'User')),
-                          style: TextStyle(
-                            fontSize: 36,
-                            fontWeight: FontWeight.bold,
-                            color: isDarkMode ? const Color(0xFF00E5FF) : const Color(0xFF667eea),
-                          ),
-                        ),
-                      ),
-                    ),
-                    
-                    // Edit Button
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: GestureDetector(
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          _handleEditProfile();
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-                            ),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF667eea).withValues(alpha: 0.5),
-                                blurRadius: 10,
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.edit_rounded,
-                            size: 20,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
+          // Profile Photo Upload Widget
+          ProfilePhotoUpload(
+            currentImageUrl: _userProfile?.profileImage,
+            size: 120,
+            showEditButton: true,
+            onImageUpdated: (imageUrl) {
+              // Refresh user profile when image is updated
+              _loadUserProfile();
             },
           ),
           

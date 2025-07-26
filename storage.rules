@@ -1,0 +1,49 @@
+rules_version = '2';
+
+// Firebase Storage Security Rules for Qasetha App
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Profile pictures: Only the user can upload/update their own picture, everyone can read
+    match /profiles/{userId}/{fileName} {
+      // Anyone can read profile pictures (for viewing in app)
+      allow read: if true;
+      
+      // Only authenticated users can write/update their own profile picture
+      allow write: if request.auth != null 
+                   && request.auth.uid == userId
+                   && isValidProfileImage();
+    }
+    
+    // Legacy profile_images path (for backward compatibility)
+    match /profile_images/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && isValidProfileImage();
+    }
+    
+    // Documents directory (if needed for future document uploads)
+    match /documents/{userId}/{fileName} {
+      allow read, write: if request.auth != null 
+                         && request.auth.uid == userId
+                         && isValidDocument();
+    }
+    
+    // All other files: access denied by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+// Helper function to validate profile images
+function isValidProfileImage() {
+  return request.resource.size < 5 * 1024 * 1024  // Max 5MB
+         && request.resource.contentType.matches('image/(jpeg|png|jpg)'); // Only image files
+}
+
+// Helper function to validate documents (for future use)
+function isValidDocument() {
+  return request.resource.size < 10 * 1024 * 1024  // Max 10MB
+         && (request.resource.contentType.matches('image/(jpeg|png|jpg)')
+             || request.resource.contentType.matches('application/pdf'));
+}

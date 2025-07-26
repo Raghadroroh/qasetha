@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../providers/auth_state_provider.dart';
 import '../models/category.dart';
 import '../services/logger_service.dart';
+import '../services/analytics_service.dart';
 
 // Import all screens
 import '../screens/auth/enhanced_login_screen.dart';
@@ -74,6 +75,7 @@ final enhancedAppRouterProvider = Provider<GoRouter>((ref) {
     debugLogDiagnostics: true,
     initialLocation: '/language-selection',
     refreshListenable: EnhancedGoRouterRefreshNotifier(ref),
+    observers: [AnalyticsService.observer],
     
     redirect: (context, state) async {
       try {

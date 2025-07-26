@@ -99,11 +99,19 @@ service cloud.firestore {
             'creditLimit', 'availableCredit', 'totalDebt', 'rating', 
             'isVerified', 'userType', 'createdAt'
           ]) &&
-          isValidUserData() &&
-          isValidEmploymentData() &&
-          isValidAddressData()
+          (isValidUserData() || 
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['profileImage', 'updatedAt']))
         ) || isAdmin()
       );
+      allow delete: if isAdmin();
+    }
+
+    match /userProfiles/{userId} {
+      allow read: if isRegisteredUser() && (
+        isOwner(userId) || isAdmin() || (isStoreOwner() && isVerifiedUser())
+      );
+      allow create: if isRegisteredUser() && isOwner(userId);
+      allow update: if isRegisteredUser() && isOwner(userId);
       allow delete: if isAdmin();
     }
 
