@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart' as provider_package;
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -11,8 +13,20 @@ import 'services/theme_service.dart';
 import 'services/firebase_service.dart';
 import 'services/logger_service.dart';
 import 'services/guest_service.dart';
+import 'services/analytics_service.dart';
 import 'utils/app_localizations.dart';
 import 'widgets/global_back_handler.dart';
+
+Future<void> setupRemoteConfig() async {
+  final remoteConfig = FirebaseRemoteConfig.instance;
+  await remoteConfig.setConfigSettings(
+    RemoteConfigSettings(
+      fetchTimeout: Duration(seconds: 10),
+      minimumFetchInterval: Duration(hours: 1),
+    ),
+  );
+  await remoteConfig.fetchAndActivate();
+}
 
 // Setup periodic cleanup of expired guest sessions
 void _setupGuestSessionCleanup() {
@@ -37,6 +51,15 @@ void main() async {
 
     // Initialize Firebase Services
     await FirebaseService().initialize();
+    
+    // Initialize Firebase Analytics
+    FirebaseAnalytics.instance;
+    
+    // Initialize Remote Config
+    await setupRemoteConfig();
+    
+    // Log app open event
+    await AnalyticsService.logAppOpen();
 
     final themeService = ThemeService();
     await themeService.loadSettings();

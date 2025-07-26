@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart' as provider;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'dart:math' as math;
 
 import '../../services/theme_service.dart';
@@ -420,7 +421,9 @@ class _EnhancedLoginScreenState extends ConsumerState<EnhancedLoginScreen> with 
                 _buildLogo(isDarkMode),
                 const SizedBox(height: 32),
                 _buildTitle(isDarkMode, isArabic),
-                const SizedBox(height: 40),
+                const SizedBox(height: 16),
+                _buildRemoteBanner(isDarkMode),
+                const SizedBox(height: 24),
                 _buildModeToggle(isDarkMode, isArabic),
                 const SizedBox(height: 24),
                 _buildFormFields(isDarkMode, isArabic),
@@ -750,6 +753,41 @@ class _EnhancedLoginScreenState extends ConsumerState<EnhancedLoginScreen> with 
                 ),
               ),
       ),
+    );
+  }
+
+  Widget _buildRemoteBanner(bool isDarkMode) {
+    final remoteConfig = FirebaseRemoteConfig.instance;
+    String bannerText = remoteConfig.getString('login_banner');
+    
+    return Column(
+      children: [
+        if (bannerText.isNotEmpty)
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.withOpacity(0.3)),
+            ),
+            child: Text(
+              bannerText,
+              style: TextStyle(
+                color: isDarkMode ? Colors.white : Colors.black87,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        const SizedBox(height: 8),
+        ElevatedButton(
+          onPressed: () async {
+            await remoteConfig.fetchAndActivate();
+            setState(() {});
+          },
+          child: Text('تحديث الريموت الآن'),
+        ),
+      ],
     );
   }
 

@@ -59,7 +59,7 @@ android {
 
 dependencies {
     // Firebase BoM (Bill of Materials)
-    implementation(platform("com.google.firebase:firebase-bom:33.16.0"))
+    implementation(platform("com.google.firebase:firebase-bom:34.0.0"))
 
     // Firebase services
     implementation("com.google.firebase:firebase-analytics")
