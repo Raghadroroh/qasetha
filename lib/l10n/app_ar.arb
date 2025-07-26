@@ -341,5 +341,22 @@
   "goodMorning": "صباح الخير",
   "goodAfternoon": "مساء الخير",
   "goodEvening": "مساء الخير",
-  "helpContent": "تواصل مع الدعم للحصول على المساعدة أو الإبلاغ عن مشاكل أو تقديم ملاحظات."
+  "helpContent": "تواصل مع الدعم للحصول على المساعدة أو الإبلاغ عن مشاكل أو تقديم ملاحظات.",
+  
+  "products": "المنتجات",
+  "services": "الخدمات",
+  "allCategories": "جميع التصنيفات",
+  "mainCategories": "التصنيفات الرئيسية",
+  "viewAll": "عرض الكل",
+  "browseAllProducts": "تصفح جميع المنتجات",
+  "exploreAvailableServices": "استكشف الخدمات المتاحة",
+  "completeCategoryView": "عرض كامل للتصنيفات",
+  "advancedSearch": "بحث متقدم",
+  "searchWithFilters": "بحث بالفلاتر",
+  "productsAndServices": "المنتجات والخدمات",
+  "errorLoadingData": "خطأ في تحميل البيانات",
+  "categoryDescription": "وصف للتصنيف",
+  "product": "منتج",
+  "service": "خدمة",
+  "errorOpeningCategory": "خطأ في فتح التصنيف"
 }

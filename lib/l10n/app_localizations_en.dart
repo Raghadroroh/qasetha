@@ -887,4 +887,52 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get helpContent =>
       'Contact support for help with the app, report issues, or provide feedback.';
+
+  @override
+  String get products => 'Products';
+
+  @override
+  String get services => 'Services';
+
+  @override
+  String get allCategories => 'All Categories';
+
+  @override
+  String get mainCategories => 'Main Categories';
+
+  @override
+  String get viewAll => 'View All';
+
+  @override
+  String get browseAllProducts => 'Browse All Products';
+
+  @override
+  String get exploreAvailableServices => 'Explore Available Services';
+
+  @override
+  String get completeCategoryView => 'Complete Category View';
+
+  @override
+  String get advancedSearch => 'Advanced Search';
+
+  @override
+  String get searchWithFilters => 'Search with Filters';
+
+  @override
+  String get productsAndServices => 'Products & Services';
+
+  @override
+  String get errorLoadingData => 'Error loading data';
+
+  @override
+  String get categoryDescription => 'Category description';
+
+  @override
+  String get product => 'Product';
+
+  @override
+  String get service => 'Service';
+
+  @override
+  String get errorOpeningCategory => 'Error opening category';
 }

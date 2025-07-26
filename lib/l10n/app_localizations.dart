@@ -1837,6 +1837,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Contact support for help with the app, report issues, or provide feedback.'**
   String get helpContent;
+
+  /// No description provided for @products.
+  ///
+  /// In en, this message translates to:
+  /// **'Products'**
+  String get products;
+
+  /// No description provided for @services.
+  ///
+  /// In en, this message translates to:
+  /// **'Services'**
+  String get services;
+
+  /// No description provided for @allCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'All Categories'**
+  String get allCategories;
+
+  /// No description provided for @mainCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Main Categories'**
+  String get mainCategories;
+
+  /// No description provided for @viewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View All'**
+  String get viewAll;
+
+  /// No description provided for @browseAllProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse All Products'**
+  String get browseAllProducts;
+
+  /// No description provided for @exploreAvailableServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore Available Services'**
+  String get exploreAvailableServices;
+
+  /// No description provided for @completeCategoryView.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete Category View'**
+  String get completeCategoryView;
+
+  /// No description provided for @advancedSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced Search'**
+  String get advancedSearch;
+
+  /// No description provided for @searchWithFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Search with Filters'**
+  String get searchWithFilters;
+
+  /// No description provided for @productsAndServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Products & Services'**
+  String get productsAndServices;
+
+  /// No description provided for @errorLoadingData.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading data'**
+  String get errorLoadingData;
+
+  /// No description provided for @categoryDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Category description'**
+  String get categoryDescription;
+
+  /// No description provided for @product.
+  ///
+  /// In en, this message translates to:
+  /// **'Product'**
+  String get product;
+
+  /// No description provided for @service.
+  ///
+  /// In en, this message translates to:
+  /// **'Service'**
+  String get service;
+
+  /// No description provided for @errorOpeningCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Error opening category'**
+  String get errorOpeningCategory;
 }
 
 class _AppLocalizationsDelegate

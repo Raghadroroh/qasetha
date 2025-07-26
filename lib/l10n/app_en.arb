@@ -341,5 +341,22 @@
   "goodMorning": "Good Morning",
   "goodAfternoon": "Good Afternoon",
   "goodEvening": "Good Evening",
-  "helpContent": "Contact support for help with the app, report issues, or provide feedback."
+  "helpContent": "Contact support for help with the app, report issues, or provide feedback.",
+  
+  "products": "Products",
+  "services": "Services",
+  "allCategories": "All Categories",
+  "mainCategories": "Main Categories",
+  "viewAll": "View All",
+  "browseAllProducts": "Browse All Products",
+  "exploreAvailableServices": "Explore Available Services",
+  "completeCategoryView": "Complete Category View",
+  "advancedSearch": "Advanced Search",
+  "searchWithFilters": "Search with Filters",
+  "productsAndServices": "Products & Services",
+  "errorLoadingData": "Error loading data",
+  "categoryDescription": "Category description",
+  "product": "Product",
+  "service": "Service",
+  "errorOpeningCategory": "Error opening category"
 }

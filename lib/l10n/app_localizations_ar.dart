@@ -886,4 +886,52 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get helpContent =>
       'تواصل مع الدعم للحصول على المساعدة أو الإبلاغ عن مشاكل أو تقديم ملاحظات.';
+
+  @override
+  String get products => 'المنتجات';
+
+  @override
+  String get services => 'الخدمات';
+
+  @override
+  String get allCategories => 'جميع التصنيفات';
+
+  @override
+  String get mainCategories => 'التصنيفات الرئيسية';
+
+  @override
+  String get viewAll => 'عرض الكل';
+
+  @override
+  String get browseAllProducts => 'تصفح جميع المنتجات';
+
+  @override
+  String get exploreAvailableServices => 'استكشف الخدمات المتاحة';
+
+  @override
+  String get completeCategoryView => 'عرض كامل للتصنيفات';
+
+  @override
+  String get advancedSearch => 'بحث متقدم';
+
+  @override
+  String get searchWithFilters => 'بحث بالفلاتر';
+
+  @override
+  String get productsAndServices => 'المنتجات والخدمات';
+
+  @override
+  String get errorLoadingData => 'خطأ في تحميل البيانات';
+
+  @override
+  String get categoryDescription => 'وصف للتصنيف';
+
+  @override
+  String get product => 'منتج';
+
+  @override
+  String get service => 'خدمة';
+
+  @override
+  String get errorOpeningCategory => 'خطأ في فتح التصنيف';
 }
